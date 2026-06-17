@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FH6 Tune</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>FH6 Tune</h1>
+  <p class="subtitle">Forza Horizon 6 Tuning Advisor</p>
+</header>
+
+<main id="app">
+
+  <!-- Input Section -->
+  <section id="input-section">
+    <div class="intro-card">
+      <p>Tell us what car you are building and what you want it to do. We will give you a full upgrade and tuning guide.</p>
+    </div>
+
+    <div class="form-group">
+      <label for="car-name">Car</label>
+      <input type="text" id="car-name" placeholder="e.g. 1997 Toyota Chaser 2.5 Tourer V">
+    </div>
+
+    <div class="form-group">
+      <label for="car-class">Target Class</label>
+      <select id="car-class">
+        <option value="">Select class</option>
+        <option value="D">D (100 - 500)</option>
+        <option value="C">C (501 - 600)</option>
+        <option value="B">B (601 - 700)</option>
+        <option value="A">A (701 - 800)</option>
+        <option value="S1">S1 (801 - 900)</option>
+        <option value="S2">S2 (901 - 998)</option>
+        <option value="R">R (999)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Drivetrain</label>
+      <div class="option-group">
+        <label class="option-label"><input type="radio" name="drivetrain" value="RWD"> RWD</label>
+        <label class="option-label"><input type="radio" name="drivetrain" value="FWD"> FWD</label>
+        <label class="option-label"><input type="radio" name="drivetrain" value="AWD"> AWD</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label>Build Purpose</label>
+      <div class="option-group">
+        <label class="option-label"><input type="radio" name="discipline" value="drift"> Drift</label>
+        <label class="option-label"><input type="radio" name="discipline" value="road"> Road Racing</label>
+        <label class="option-label"><input type="radio" name="discipline" value="street"> Street Racing</label>
+        <label class="option-label"><input type="radio" name="discipline" value="offroad"> Off-Road</label>
+        <label class="option-label"><input type="radio" name="discipline" value="cross-country"> Cross Country</label>
+        <label class="option-label"><input type="radio" name="discipline" value="drag"> Drag</label>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="engine-swaps">Available Engine Swaps (optional)</label>
+      <textarea id="engine-swaps" rows="3" placeholder="List the engine swap options from the game, e.g.&#10;3.0L I6 TT&#10;6.2L V8&#10;4.8L V10&#10;4.0L V8 TT&#10;Racing V12"></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="car-notes">Anything else? (optional)</label>
+      <textarea id="car-notes" rows="3" placeholder="e.g. I want a high angle monster, this car has turbo lag, I prefer a loose rear end, the car is very heavy, I want it competitive for online drift adventures"></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="btn-generate" onclick="generate()">Build My Tune</button>
+  </section>
+
+  <!-- Output Section -->
+  <section id="output-section" style="display:none;">
+    <div class="output-header">
+      <div>
+        <h2 id="output-title"></h2>
+        <p class="output-subtitle" id="output-subtitle"></p>
+      </div>
+      <button class="btn btn-small" onclick="resetForm()">New Build</button>
+    </div>
+
+    <nav class="tab-bar">
+      <button class="tab active" data-tab="upgrades" onclick="switchTab('upgrades')">Upgrades</button>
+      <button class="tab" data-tab="tuning" onclick="switchTab('tuning')">Tuning</button>
+    </nav>
+
+    <div id="tab-upgrades" class="tab-content active"></div>
+    <div id="tab-tuning" class="tab-content"></div>
+
+    <div class="output-actions">
+      <button class="btn" onclick="copyBuild()">Copy to Clipboard</button>
+      <button class="btn" onclick="exportBuild()">Export as HTML</button>
+    </div>
+  </section>
+
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="tunes.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
