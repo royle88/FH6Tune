@@ -1,4 +1,4 @@
-var MODEL = 'claude-sonnet-4-20250514';
+var MODEL = 'gemini-2.5-flash';
 
 function getApiKey() {
   return localStorage.getItem('fh6tune_api_key') || '';
@@ -87,7 +87,9 @@ var SYSTEM_PROMPT = [
   '',
   'End with an "Adjustment Tips" section with 3 to 5 bullet points for common problems and how to fix them, specific to the car and discipline.',
   '',
-  'Use markdown tables for tuning values where it makes sense. Use headers (##, ###) to structure the response clearly.',
+  'Use simple two-column markdown tables (Setting | Value) for tuning values. Do not use three-column tables. Use a separate table per tuning category (Tyres, Gearing, Alignment, etc.) with a ### heading above each one.',
+  'For upgrades, use bullet point lists grouped under ### headings, not tables.',
+  'Use ## for main sections (Upgrades, Tuning, Adjustment Tips) and ### for subsections.',
   'Be specific and confident in your recommendations. Give exact values, not vague ranges where possible.',
   'Consider the specific car characteristics (weight, power delivery, handling traits) when recommending values.'
 ].join('\n');
@@ -154,7 +156,7 @@ function generate() {
     document.getElementById('loading-status').textContent = statusMessages[statusIndex];
   }, 3000);
 
-  callClaude(userMessage).then(function (response) {
+  callGemini(userMessage).then(function (response) {
     clearInterval(statusInterval);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
@@ -171,35 +173,40 @@ function generate() {
   });
 }
 
-function callClaude(userMessage) {
-  return fetch('https://api.anthropic.com/v1/messages', {
+function callGemini(userMessage) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + getApiKey();
+  return fetch(url, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': getApiKey(),
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true'
+      'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      model: MODEL,
-      max_tokens: 4096,
-      system: SYSTEM_PROMPT,
-      messages: [
-        { role: 'user', content: userMessage }
-      ]
+      system_instruction: {
+        parts: [{ text: SYSTEM_PROMPT }]
+      },
+      contents: [
+        { role: 'user', parts: [{ text: userMessage }] }
+      ],
+      generationConfig: {
+        maxOutputTokens: 4096
+      }
     })
   }).then(function (res) {
     if (!res.ok) {
       return res.json().then(function (data) {
-        throw new Error(data.error ? data.error.message : 'API error ' + res.status);
+        var msg = 'API error ' + res.status;
+        if (data.error && data.error.message) msg = data.error.message;
+        throw new Error(msg);
       });
     }
     return res.json();
   }).then(function (data) {
-    if (data.content && data.content.length > 0) {
-      return data.content[0].text;
+    if (data.candidates && data.candidates.length > 0 &&
+        data.candidates[0].content && data.candidates[0].content.parts &&
+        data.candidates[0].content.parts.length > 0) {
+      return data.candidates[0].content.parts[0].text;
     }
-    throw new Error('No response from Claude');
+    throw new Error('No response from Gemini');
   });
 }
 

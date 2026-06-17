@@ -431,6 +431,7 @@ main {
   border: 1px solid #2a2a2a;
   border-radius: 6px;
   overflow: hidden;
+  table-layout: fixed;
 }
 
 #ai-response th {
@@ -445,15 +446,29 @@ main {
 }
 
 #ai-response td {
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-top: 1px solid #222;
   font-size: 13px;
+  color: #ccc;
+  word-wrap: break-word;
+}
+
+#ai-response td:first-child {
+  color: #888;
 }
 
 #ai-response td:last-child {
   color: #fff;
   font-weight: 600;
-  text-align: right;
+}
+
+#ai-response tr td:only-child {
+  color: #e8212b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-size: 11px;
+  background: #222;
 }
 
 #ai-response hr {
