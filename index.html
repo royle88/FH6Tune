@@ -22,8 +22,24 @@
     </div>
 
     <div class="form-group">
+      <label for="car-make">Make</label>
+      <select id="car-make" onchange="populateModels()">
+        <option value="">Select make</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="car-model">Model</label>
+      <select id="car-model" onchange="populateCars()" disabled>
+        <option value="">Select model</option>
+      </select>
+    </div>
+
+    <div class="form-group">
       <label for="car-name">Car</label>
-      <input type="text" id="car-name" placeholder="e.g. 1997 Toyota Chaser 2.5 Tourer V">
+      <select id="car-name" disabled>
+        <option value="">Select car</option>
+      </select>
     </div>
 
     <div class="form-group">
@@ -66,11 +82,6 @@
       <div class="engine-swap-container" id="engine-swap-container"></div>
     </div>
 
-    <div class="form-group">
-      <label for="car-notes">Anything else? (optional)</label>
-      <textarea id="car-notes" rows="3" placeholder="e.g. I want a high angle monster, this car has turbo lag, I prefer a loose rear end, the car is very heavy, I want it competitive for online drift adventures"></textarea>
-    </div>
-
     <button class="btn btn-primary btn-full" id="btn-generate" onclick="generate()">Build My Tune</button>
   </section>
 
@@ -106,6 +117,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="cars.js"></script>
 <script src="tunes.js"></script>
 <script src="app.js"></script>
 </body>

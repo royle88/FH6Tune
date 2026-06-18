@@ -59,6 +59,11 @@ main {
   margin-bottom: 8px;
 }
 
+.form-group select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .form-group textarea,
 .form-group input[type="text"],
 .form-group input[type="password"],

@@ -1,4 +1,61 @@
 renderEngineSwaps();
+populateMakes();
+
+function populateMakes() {
+  var sel = document.getElementById('car-make');
+  var makes = Object.keys(CAR_DATABASE).sort(function (a, b) {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+  for (var i = 0; i < makes.length; i++) {
+    var opt = document.createElement('option');
+    opt.value = makes[i];
+    opt.textContent = makes[i];
+    sel.appendChild(opt);
+  }
+}
+
+function populateModels() {
+  var make = document.getElementById('car-make').value;
+  var modelSel = document.getElementById('car-model');
+  var carSel = document.getElementById('car-name');
+  modelSel.innerHTML = '<option value="">Select model</option>';
+  carSel.innerHTML = '<option value="">Select car</option>';
+  carSel.disabled = true;
+  if (!make) { modelSel.disabled = true; return; }
+  modelSel.disabled = false;
+  var models = Object.keys(CAR_DATABASE[make]).sort(function (a, b) {
+    return a.toLowerCase().localeCompare(b.toLowerCase());
+  });
+  for (var i = 0; i < models.length; i++) {
+    var opt = document.createElement('option');
+    opt.value = models[i];
+    opt.textContent = models[i];
+    modelSel.appendChild(opt);
+  }
+  if (models.length === 1) {
+    modelSel.value = models[0];
+    populateCars();
+  }
+}
+
+function populateCars() {
+  var make = document.getElementById('car-make').value;
+  var model = document.getElementById('car-model').value;
+  var carSel = document.getElementById('car-name');
+  carSel.innerHTML = '<option value="">Select car</option>';
+  if (!make || !model) { carSel.disabled = true; return; }
+  carSel.disabled = false;
+  var cars = CAR_DATABASE[make][model];
+  for (var i = 0; i < cars.length; i++) {
+    var opt = document.createElement('option');
+    opt.value = cars[i];
+    opt.textContent = cars[i];
+    carSel.appendChild(opt);
+  }
+  if (cars.length === 1) {
+    carSel.value = cars[0];
+  }
+}
 
 function getSelectedEngines() {
   var checked = document.querySelectorAll('input[name="engine-swap"]:checked');
@@ -8,7 +65,7 @@ function getSelectedEngines() {
 }
 
 function generate() {
-  var carName = document.getElementById('car-name').value.trim();
+  var carName = document.getElementById('car-name').value;
   var carClass = document.getElementById('car-class').value;
   var drivetrainEl = document.querySelector('input[name="drivetrain"]:checked');
   var disciplineEl = document.querySelector('input[name="discipline"]:checked');
@@ -16,7 +73,7 @@ function generate() {
   var valid = true;
   clearErrors();
 
-  if (!carName) { showError('car-name', 'Please enter a car name'); valid = false; }
+  if (!carName) { showError('car-name', 'Please select a car'); valid = false; }
   if (!carClass) { showError('car-class', 'Please select a class'); valid = false; }
   if (!drivetrainEl) { showFieldError('drivetrain', 'Please select a drivetrain'); valid = false; }
   if (!disciplineEl) { showFieldError('discipline', 'Please select a build purpose'); valid = false; }
@@ -25,7 +82,6 @@ function generate() {
   var drivetrain = drivetrainEl.value;
   var discipline = disciplineEl.value;
   var engineSwaps = getSelectedEngines();
-  var notes = document.getElementById('car-notes').value.trim();
   var data = KNOWLEDGE[discipline];
 
   if (!data) {
@@ -42,7 +98,7 @@ function generate() {
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, notes, discipline);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -50,7 +106,7 @@ function generate() {
   }, 600);
 }
 
-function buildGuide(data, cls, dt, engineSwaps, notes, discipline) {
+function buildGuide(data, cls, dt, engineSwaps, discipline) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
@@ -100,12 +156,6 @@ function buildGuide(data, cls, dt, engineSwaps, notes, discipline) {
   // PI note
   html += '<blockquote>Every car has different PI costs per part. If you have PI headroom after fitting these upgrades, push the most impactful parts further (e.g. Sport to Race). If you are over budget, drop the least critical parts down a tier first. Handling upgrades generally give more competitive advantage than raw power.</blockquote>';
 
-  // Notes
-  if (notes) {
-    html += '<h3>Your Notes</h3>';
-    html += '<p>' + escapeHtml(notes) + '</p>';
-  }
-
   // Tuning
   html += '<h2>Tuning</h2>';
 
@@ -141,6 +191,11 @@ function resetForm() {
   document.getElementById('input-section').style.display = 'block';
   document.getElementById('loading-section').style.display = 'none';
   document.getElementById('output-section').style.display = 'none';
+  document.getElementById('car-make').value = '';
+  document.getElementById('car-model').innerHTML = '<option value="">Select model</option>';
+  document.getElementById('car-model').disabled = true;
+  document.getElementById('car-name').innerHTML = '<option value="">Select car</option>';
+  document.getElementById('car-name').disabled = true;
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
