@@ -1,3 +1,136 @@
+var ENGINE_SWAPS = [
+  '1.0L I4 Motorbike',
+  '1.1L V4 Motorbike',
+  '1.2L I3 Motorbike',
+  '1.3L 2 Rotor',
+  '1.4L I4 Motorbike',
+  '1.6L I3-T',
+  '1.6L I4 VVT',
+  '1.6L I4 Turbo Rally',
+  '1.6L V6-T',
+  '1.8L I4 Twin Charged',
+  '2.0L F4 Turbo',
+  '2.0L F4 Turbo Rally',
+  '2.0L I4 VVT',
+  '2.0L I4-T',
+  '2.0L R3',
+  '2.0L R3-T',
+  '2.2L I4-T',
+  '2.4L F4',
+  '2.5L F4 Turbo',
+  '2.5L F4-T',
+  '2.5L I5 Turbo',
+  '2.5L I5-T',
+  '2.5L I6-T',
+  '2.6L I6-TT',
+  '2.6L 4 Rotor Racing',
+  '2.9L V6-TT',
+  '3.0L I6-T Racing',
+  '3.0L I6-TT',
+  '3.0L V6-TT',
+  '3.0L V8 Racing',
+  '3.2L I6',
+  '3.2L F6-TT',
+  '3.5L V8-TT',
+  '3.5L TT Hybrid',
+  '3.8L V6-TT',
+  '3.8L F6-TT',
+  'Racing V6',
+  '4.0L F6',
+  '4.0L V8',
+  '4.0L V8-TT',
+  '4.2L V8',
+  '4.4L V8-TT',
+  '4.5L V8',
+  '4.6L V8 Hybrid',
+  '4.7L V8',
+  '4.8L V10',
+  '5.0L V10',
+  '5.2L V8',
+  '5.2L V10',
+  '5.2L V12',
+  '5.5L V8',
+  '5.8L V8 DSC',
+  '6.0L V12',
+  '6.0L V12 Racing',
+  '6.1L V12',
+  '6.2L V8',
+  '6.2L V8 DSC',
+  '6.2L V8-PDSC',
+  '6.3L V12 Hybrid',
+  '6.5L V12',
+  '6.7L V8-T Diesel',
+  '7.2L V8',
+  '7.2L V8 Racing',
+  '7.4L V8-TT',
+  '7.7L V12',
+  '8.4L V10',
+  '8.9L V8 DSC',
+  'Racing V12'
+];
+
+var ENGINE_CATEGORIES = {
+  small: { label: 'Small (1.0L to 2.0L)', type: 'I3/I4/V4/R3/Rotor', traits: 'Lightweight, rev-happy, low PI cost. Good for lower classes where you need to stay within budget.' },
+  mid: { label: 'Mid (2.2L to 3.8L)', type: 'I5/I6/V6/F4/F6/Rotor', traits: 'Great balance of power and weight. Turbo I6s and V6s are excellent for drift and road racing. Smooth, controllable power delivery.' },
+  v8: { label: 'V8 (4.0L to 7.4L)', type: 'V8', traits: 'Strong mid-range torque, excellent for drift and road racing. The workhorse of Forza tuning. Heavier than I6s but more powerful.' },
+  big: { label: 'Large (V10/V12, 4.8L+)', type: 'V10/V12', traits: 'Maximum power but heavy and expensive on PI. Best suited for S2 and R class builds, or drag racing where raw power is everything.' }
+};
+
+function categoriseEngine(name) {
+  var lower = name.toLowerCase();
+  if (lower.indexOf('v12') !== -1 || lower.indexOf('v10') !== -1) return 'big';
+  if (lower.indexOf('v8') !== -1) return 'v8';
+  var litres = parseFloat(name);
+  if (!isNaN(litres) && litres <= 2.0) return 'small';
+  return 'mid';
+}
+
+function recommendEngine(engines, discipline) {
+  if (!engines || engines.length === 0) return null;
+
+  var dominated = { drift: ['mid', 'v8'], road: ['mid', 'v8'], street: ['mid', 'v8'], offroad: ['mid', 'v8'], 'cross-country': ['mid', 'v8'], drag: ['big', 'v8'] };
+  var preferred = dominated[discipline] || ['mid', 'v8'];
+
+  var scored = engines.map(function (eng) {
+    var cat = categoriseEngine(eng);
+    var score = 0;
+    if (preferred.indexOf(cat) !== -1) score += 10;
+    if (cat === preferred[0]) score += 5;
+    var lower = eng.toLowerCase();
+    if (discipline === 'drift' || discipline === 'road' || discipline === 'street') {
+      if (lower.indexOf('i6') !== -1 || lower.indexOf('i5') !== -1) score += 3;
+      if (lower.indexOf('-tt') !== -1 || lower.indexOf(' tt') !== -1) score += 2;
+      if (lower.indexOf('-t') !== -1 && lower.indexOf('-tt') === -1) score += 1;
+    }
+    if (discipline === 'drag') {
+      var litres = parseFloat(eng);
+      if (!isNaN(litres)) score += litres;
+      if (lower.indexOf('dsc') !== -1 || lower.indexOf('pdsc') !== -1) score += 3;
+    }
+    if (discipline === 'offroad' || discipline === 'cross-country') {
+      if (lower.indexOf('-t') !== -1) score += 2;
+      if (lower.indexOf('diesel') !== -1) score += 4;
+    }
+    if (lower.indexOf('rally') !== -1 && (discipline === 'offroad' || discipline === 'cross-country')) score += 5;
+    if (lower.indexOf('racing') !== -1) score += 2;
+    return { engine: eng, score: score, category: cat };
+  });
+
+  scored.sort(function (a, b) { return b.score - a.score; });
+  return scored[0];
+}
+
+function renderEngineSwaps() {
+  var container = document.getElementById('engine-swap-container');
+  if (!container) return;
+  var html = '';
+  for (var i = 0; i < ENGINE_SWAPS.length; i++) {
+    var id = 'engine-' + i;
+    html += '<label class="engine-label"><input type="checkbox" name="engine-swap" value="' + ENGINE_SWAPS[i] + '" id="' + id + '"> ' + ENGINE_SWAPS[i] + '</label>';
+  }
+  container.innerHTML = html;
+}
+
 var CLASS_SCALE = { D: 0.45, C: 0.55, B: 0.65, A: 0.8, S1: 0.9, S2: 1.0, R: 1.0 };
 
 function upgradeLevel(cls, tiers) {

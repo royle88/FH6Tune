@@ -1,3 +1,12 @@
+renderEngineSwaps();
+
+function getSelectedEngines() {
+  var checked = document.querySelectorAll('input[name="engine-swap"]:checked');
+  var engines = [];
+  checked.forEach(function (cb) { engines.push(cb.value); });
+  return engines;
+}
+
 function generate() {
   var carName = document.getElementById('car-name').value.trim();
   var carClass = document.getElementById('car-class').value;
@@ -15,7 +24,7 @@ function generate() {
 
   var drivetrain = drivetrainEl.value;
   var discipline = disciplineEl.value;
-  var engineSwaps = document.getElementById('engine-swaps').value.trim();
+  var engineSwaps = getSelectedEngines();
   var notes = document.getElementById('car-notes').value.trim();
   var data = KNOWLEDGE[discipline];
 
@@ -33,7 +42,7 @@ function generate() {
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, notes);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, notes, discipline);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -41,7 +50,7 @@ function generate() {
   }, 600);
 }
 
-function buildGuide(data, cls, dt, engineSwaps, notes) {
+function buildGuide(data, cls, dt, engineSwaps, notes, discipline) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
@@ -65,15 +74,26 @@ function buildGuide(data, cls, dt, engineSwaps, notes) {
   }
 
   // Engine swap advice
-  if (engineSwaps) {
+  if (engineSwaps && engineSwaps.length > 0) {
     html += '<h3>Engine Swap Recommendation</h3>';
-    var engines = engineSwaps.split('\n').filter(function (e) { return e.trim(); });
+    var best = recommendEngine(engineSwaps, discipline);
     html += '<p>Available swaps for this car:</p>';
-    html += '<ul>';
-    for (var e = 0; e < engines.length; e++) {
-      html += '<li>' + escapeHtml(engines[e].trim()) + '</li>';
+    html += '<table><thead><tr><th>Engine</th><th>Category</th></tr></thead><tbody>';
+    for (var e = 0; e < engineSwaps.length; e++) {
+      var cat = categoriseEngine(engineSwaps[e]);
+      var catInfo = ENGINE_CATEGORIES[cat];
+      var isBest = best && best.engine === engineSwaps[e];
+      html += '<tr><td>' + (isBest ? '<strong>' : '') + escapeHtml(engineSwaps[e]) + (isBest ? ' (Recommended)</strong>' : '') + '</td>';
+      html += '<td>' + escapeHtml(catInfo ? catInfo.type : '') + '</td></tr>';
     }
-    html += '</ul>';
+    html += '</tbody></table>';
+    if (best) {
+      var bestCat = ENGINE_CATEGORIES[best.category];
+      html += '<p><strong>Recommended: ' + escapeHtml(best.engine) + '</strong></p>';
+      if (bestCat) {
+        html += '<p class="tune-note">' + escapeHtml(bestCat.traits) + '</p>';
+      }
+    }
     html += '<p>' + escapeHtml(data.engineSwapAdvice) + '</p>';
   }
 
