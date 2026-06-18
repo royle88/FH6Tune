@@ -15,20 +15,8 @@
 
 <main id="app">
 
-  <!-- API Key Section -->
-  <section id="api-key-section" style="display:none;">
-    <div class="intro-card">
-      <p>To generate personalised builds, this app uses the Gemini API (free). Get your API key from <a href="https://aistudio.google.com/apikey" target="_blank" style="color:#e8212b;">Google AI Studio</a>, then paste it below. It is stored only in your browser.</p>
-    </div>
-    <div class="form-group">
-      <label for="api-key-input">Google AI API Key</label>
-      <input type="password" id="api-key-input" placeholder="AIza...">
-    </div>
-    <button class="btn btn-primary btn-full" onclick="saveApiKey()">Save Key</button>
-  </section>
-
   <!-- Input Section -->
-  <section id="input-section" style="display:none;">
+  <section id="input-section">
     <div class="intro-card">
       <p>Tell us what car you are building and what you want it to do. We will give you a full upgrade and tuning guide.</p>
     </div>
@@ -84,7 +72,6 @@
     </div>
 
     <button class="btn btn-primary btn-full" id="btn-generate" onclick="generate()">Build My Tune</button>
-    <p style="text-align:center;margin-top:12px;"><a href="#" onclick="clearApiKey();return false;" style="color:#666;font-size:11px;text-decoration:none;">Change API Key</a></p>
   </section>
 
   <!-- Loading Section -->
@@ -119,6 +106,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="tunes.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

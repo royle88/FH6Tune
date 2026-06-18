@@ -471,6 +471,14 @@ main {
   background: #222;
 }
 
+#ai-response .tune-note {
+  font-size: 12px;
+  color: #777;
+  margin-top: -8px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
 #ai-response hr {
   border: none;
   border-top: 1px solid #2a2a2a;

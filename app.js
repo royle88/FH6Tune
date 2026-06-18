@@ -1,99 +1,3 @@
-var MODEL = 'gemini-2.5-flash';
-
-function getApiKey() {
-  return localStorage.getItem('fh6tune_api_key') || '';
-}
-
-function saveApiKey() {
-  var key = document.getElementById('api-key-input').value.trim();
-  if (!key) {
-    showToast('Please enter an API key');
-    return;
-  }
-  localStorage.setItem('fh6tune_api_key', key);
-  document.getElementById('api-key-section').style.display = 'none';
-  document.getElementById('input-section').style.display = 'block';
-  showToast('API key saved');
-}
-
-function clearApiKey() {
-  localStorage.removeItem('fh6tune_api_key');
-  document.getElementById('input-section').style.display = 'none';
-  document.getElementById('output-section').style.display = 'none';
-  document.getElementById('api-key-section').style.display = 'block';
-  document.getElementById('api-key-input').value = '';
-  showToast('API key cleared');
-}
-
-(function init() {
-  if (getApiKey()) {
-    document.getElementById('input-section').style.display = 'block';
-  } else {
-    document.getElementById('api-key-section').style.display = 'block';
-  }
-})();
-
-var SYSTEM_PROMPT = [
-  'You are a Forza Horizon 6 tuning expert. You provide detailed, specific upgrade and tuning guides for cars in Forza Horizon 6.',
-  '',
-  'Use UK English throughout. Do not use emdashes or double dashes.',
-  '',
-  'When the user tells you about their car, class, drivetrain, discipline, available engine swaps, and any preferences, you must respond with a complete build guide in two sections:',
-  '',
-  '## Upgrades',
-  '',
-  'Provide specific upgrade recommendations covering:',
-  '- Engine (intake, exhaust, ignition, camshaft, valves, fuel system, oil/cooling)',
-  '- Aspiration (turbo/supercharger type, intercooler)',
-  '- Platform and Handling (brakes, springs/dampers, ARBs, roll cage, weight reduction, chassis stiffening)',
-  '- Drivetrain (clutch, transmission, driveline, differential)',
-  '- Tyres and Rims (compound, widths, rim weight)',
-  '- Aero (front bumper, rear wing)',
-  '- Engine swap recommendation if engine swaps are listed (explain which one to pick and why for this specific build)',
-  '- Drivetrain conversion if relevant (e.g. AWD swap for off-road, RWD for drift)',
-  '',
-  'For each part, specify the upgrade level (Stock, Street, Sport, Race, or specific items like Drift Tyres, Rally Springs).',
-  'Tailor recommendations to the specific car. Consider the car weight, power characteristics, and how it handles.',
-  'Account for the target class PI budget. Lower classes need fewer upgrades. Higher classes can push more parts to Race.',
-  '',
-  'End the upgrades section with a note that every car has different PI costs per part, so if they have PI headroom they should push upgrades further, and if over budget they should drop the least impactful parts first.',
-  '',
-  '## Tuning',
-  '',
-  'Provide specific tuning values covering each menu in order:',
-  '- Tyres (front and rear pressure in PSI)',
-  '- Gearing (final drive and individual gear ratios or strategy)',
-  '- Alignment (front/rear camber, front/rear toe, caster)',
-  '- Anti-Roll Bars (front and rear values)',
-  '- Springs (front/rear spring rate in kgf/mm, front/rear ride height)',
-  '- Damping (front/rear rebound, front/rear bump)',
-  '- Aero (front/rear downforce if fitted)',
-  '- Brakes (pressure %, balance)',
-  '- Differential (accel/decel lock %, front diff and centre balance for AWD/FWD)',
-  '',
-  'For drift builds specifically, use these proven baseline values:',
-  '- Front tyre pressure: 29 PSI, Rear tyre pressure: 39 to 41 PSI',
-  '- Front camber: -4.5 to -5.0, Rear camber: -0.5 to -1.0',
-  '- Front toe: 0.3 out, Rear toe: 0.1 to 0.2 in',
-  '- Caster: Max (~7.0)',
-  '- Front ARB: 25 to 30, Rear ARB: 8 to 12',
-  '- Front rebound: 8.0, Rear rebound: 6.5',
-  '- Front bump: 3.0, Rear bump: 2.5',
-  '- Brake balance: 48 to 50% rear',
-  '- Diff acceleration: 100%, Diff deceleration: 10%',
-  'Adjust these baselines based on the specific car characteristics and user preferences.',
-  '',
-  'For each tuning section, provide a brief explanation of why these values suit the car and build.',
-  '',
-  'End with an "Adjustment Tips" section with 3 to 5 bullet points for common problems and how to fix them, specific to the car and discipline.',
-  '',
-  'Use simple two-column markdown tables (Setting | Value) for tuning values. Do not use three-column tables. Use a separate table per tuning category (Tyres, Gearing, Alignment, etc.) with a ### heading above each one.',
-  'For upgrades, use bullet point lists grouped under ### headings, not tables.',
-  'Use ## for main sections (Upgrades, Tuning, Adjustment Tips) and ### for subsections.',
-  'Be specific and confident in your recommendations. Give exact values, not vague ranges where possible.',
-  'Consider the specific car characteristics (weight, power delivery, handling traits) when recommending values.'
-].join('\n');
-
 function generate() {
   var carName = document.getElementById('car-name').value.trim();
   var carClass = document.getElementById('car-class').value;
@@ -109,174 +13,106 @@ function generate() {
   if (!disciplineEl) { showFieldError('discipline', 'Please select a build purpose'); valid = false; }
   if (!valid) return;
 
-  if (!getApiKey()) {
-    showToast('Please set your API key first');
-    return;
-  }
-
   var drivetrain = drivetrainEl.value;
   var discipline = disciplineEl.value;
   var engineSwaps = document.getElementById('engine-swaps').value.trim();
   var notes = document.getElementById('car-notes').value.trim();
+  var data = KNOWLEDGE[discipline];
 
-  var disciplineLabels = {
-    drift: 'Drift', road: 'Road Racing', street: 'Street Racing',
-    offroad: 'Off-Road', 'cross-country': 'Cross Country', drag: 'Drag'
-  };
-
-  var userMessage = 'I have a ' + carName + '.\n';
-  userMessage += 'Target class: ' + carClass + '\n';
-  userMessage += 'Drivetrain: ' + drivetrain + '\n';
-  userMessage += 'Build purpose: ' + disciplineLabels[discipline] + '\n';
-  if (engineSwaps) {
-    userMessage += '\nAvailable engine swaps:\n' + engineSwaps + '\n';
+  if (!data) {
+    showToast('Unknown discipline');
+    return;
   }
-  if (notes) {
-    userMessage += '\nAdditional notes: ' + notes + '\n';
-  }
-  userMessage += '\nPlease provide a full upgrade and tuning guide for this build.';
 
   document.getElementById('output-title').textContent = carName;
   document.getElementById('output-subtitle').textContent =
-    carClass + ' | ' + drivetrain + ' | ' + disciplineLabels[discipline];
+    carClass + ' | ' + drivetrain + ' | ' + data.name;
 
   document.getElementById('input-section').style.display = 'none';
   document.getElementById('loading-section').style.display = 'block';
   document.getElementById('output-section').style.display = 'none';
 
-  var statusMessages = [
-    'Analysing your car and build requirements',
-    'Working out the best upgrade path',
-    'Calculating tuning values',
-    'Fine-tuning the setup for your car'
-  ];
-  var statusIndex = 0;
-  var statusInterval = setInterval(function () {
-    statusIndex = (statusIndex + 1) % statusMessages.length;
-    document.getElementById('loading-status').textContent = statusMessages[statusIndex];
-  }, 3000);
-
-  callGemini(userMessage).then(function (response) {
-    clearInterval(statusInterval);
+  setTimeout(function () {
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, notes);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
-    document.getElementById('ai-response').innerHTML = markdownToHtml(response);
+    document.getElementById('ai-response').innerHTML = html;
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }).catch(function (err) {
-    clearInterval(statusInterval);
-    document.getElementById('loading-section').style.display = 'none';
-    document.getElementById('output-section').style.display = 'block';
-    document.getElementById('ai-response').innerHTML =
-      '<div class="error-card"><p>Something went wrong generating your build.</p>' +
-      '<p style="font-size:12px;color:#888;">' + escapeHtml(err.message || String(err)) + '</p>' +
-      '<button class="btn" onclick="resetForm()" style="margin-top:12px;">Try Again</button></div>';
-  });
+  }, 600);
 }
 
-function callGemini(userMessage) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' + MODEL + ':generateContent?key=' + getApiKey();
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      system_instruction: {
-        parts: [{ text: SYSTEM_PROMPT }]
-      },
-      contents: [
-        { role: 'user', parts: [{ text: userMessage }] }
-      ],
-      generationConfig: {
-        maxOutputTokens: 4096
-      }
-    })
-  }).then(function (res) {
-    if (!res.ok) {
-      return res.json().then(function (data) {
-        var msg = 'API error ' + res.status;
-        if (data.error && data.error.message) msg = data.error.message;
-        throw new Error(msg);
-      });
+function buildGuide(data, cls, dt, engineSwaps, notes) {
+  var html = '';
+
+  html += '<p>' + escapeHtml(data.overview) + '</p>';
+
+  // Upgrades
+  html += '<h2>Upgrades</h2>';
+
+  var upgrades = data.getUpgrades(cls, dt);
+  for (var i = 0; i < upgrades.length; i++) {
+    var cat = upgrades[i];
+    html += '<h3>' + escapeHtml(cat.category) + '</h3>';
+    html += '<table><thead><tr><th>Part</th><th>Level</th></tr></thead><tbody>';
+    for (var j = 0; j < cat.items.length; j++) {
+      html += '<tr><td>' + escapeHtml(cat.items[j].part) + '</td>';
+      html += '<td>' + escapeHtml(cat.items[j].level) + '</td></tr>';
     }
-    return res.json();
-  }).then(function (data) {
-    if (data.candidates && data.candidates.length > 0 &&
-        data.candidates[0].content && data.candidates[0].content.parts &&
-        data.candidates[0].content.parts.length > 0) {
-      return data.candidates[0].content.parts[0].text;
+    html += '</tbody></table>';
+    if (cat.note) {
+      html += '<p class="tune-note">' + escapeHtml(cat.note) + '</p>';
     }
-    throw new Error('No response from Gemini');
-  });
-}
+  }
 
-function markdownToHtml(md) {
-  var html = md;
+  // Engine swap advice
+  if (engineSwaps) {
+    html += '<h3>Engine Swap Recommendation</h3>';
+    var engines = engineSwaps.split('\n').filter(function (e) { return e.trim(); });
+    html += '<p>Available swaps for this car:</p>';
+    html += '<ul>';
+    for (var e = 0; e < engines.length; e++) {
+      html += '<li>' + escapeHtml(engines[e].trim()) + '</li>';
+    }
+    html += '</ul>';
+    html += '<p>' + escapeHtml(data.engineSwapAdvice) + '</p>';
+  }
 
-  // Tables
-  html = html.replace(/^(\|.+\|)\n(\|[\s\-:|]+\|)\n((?:\|.+\|\n?)+)/gm, function (match, header, sep, body) {
-    var cols = header.split('|').filter(function (c) { return c.trim(); });
-    var alignments = sep.split('|').filter(function (c) { return c.trim(); }).map(function (c) {
-      c = c.trim();
-      if (c.startsWith(':') && c.endsWith(':')) return 'center';
-      if (c.endsWith(':')) return 'right';
-      return 'left';
-    });
-    var out = '<table><thead><tr>';
-    cols.forEach(function (c, i) {
-      out += '<th style="text-align:' + (alignments[i] || 'left') + '">' + c.trim() + '</th>';
-    });
-    out += '</tr></thead><tbody>';
-    body.trim().split('\n').forEach(function (row) {
-      var cells = row.split('|').filter(function (c) { return c.trim() !== ''; });
-      out += '<tr>';
-      cells.forEach(function (c, i) {
-        out += '<td style="text-align:' + (alignments[i] || 'left') + '">' + c.trim() + '</td>';
-      });
-      out += '</tr>';
-    });
-    out += '</tbody></table>';
-    return out;
-  });
+  // PI note
+  html += '<blockquote>Every car has different PI costs per part. If you have PI headroom after fitting these upgrades, push the most impactful parts further (e.g. Sport to Race). If you are over budget, drop the least critical parts down a tier first. Handling upgrades generally give more competitive advantage than raw power.</blockquote>';
 
-  // Headers
-  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-  html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
+  // Notes
+  if (notes) {
+    html += '<h3>Your Notes</h3>';
+    html += '<p>' + escapeHtml(notes) + '</p>';
+  }
 
-  // Bold and italic
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  // Tuning
+  html += '<h2>Tuning</h2>';
 
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  var tuning = data.getTuning(cls, dt);
+  for (var t = 0; t < tuning.length; t++) {
+    var sec = tuning[t];
+    html += '<h3>' + escapeHtml(sec.name) + '</h3>';
+    html += '<table><thead><tr><th>Setting</th><th>Value</th></tr></thead><tbody>';
+    for (var v = 0; v < sec.values.length; v++) {
+      html += '<tr><td>' + escapeHtml(sec.values[v].label) + '</td>';
+      html += '<td>' + escapeHtml(sec.values[v].value) + '</td></tr>';
+    }
+    html += '</tbody></table>';
+    if (sec.note) {
+      html += '<p class="tune-note">' + escapeHtml(sec.note) + '</p>';
+    }
+  }
 
-  // Blockquotes
-  html = html.replace(/^> (.+)$/gm, '<blockquote>$1</blockquote>');
-
-  // Horizontal rules
-  html = html.replace(/^---$/gm, '<hr>');
-
-  // Unordered lists
-  html = html.replace(/^[-*] (.+)$/gm, '<li>$1</li>');
-  html = html.replace(/((?:<li>.+<\/li>\n?)+)/g, '<ul>$1</ul>');
-
-  // Paragraphs
-  html = html.replace(/\n\n/g, '</p><p>');
-  html = '<p>' + html + '</p>';
-
-  // Clean up empty paragraphs and paragraphs around block elements
-  html = html.replace(/<p>\s*<\/p>/g, '');
-  html = html.replace(/<p>\s*(<h[23]>)/g, '$1');
-  html = html.replace(/(<\/h[23]>)\s*<\/p>/g, '$1');
-  html = html.replace(/<p>\s*(<table>)/g, '$1');
-  html = html.replace(/(<\/table>)\s*<\/p>/g, '$1');
-  html = html.replace(/<p>\s*(<ul>)/g, '$1');
-  html = html.replace(/(<\/ul>)\s*<\/p>/g, '$1');
-  html = html.replace(/<p>\s*(<hr>)/g, '$1');
-  html = html.replace(/(<hr>)\s*<\/p>/g, '$1');
-  html = html.replace(/<p>\s*(<blockquote>)/g, '$1');
-  html = html.replace(/(<\/blockquote>)\s*<\/p>/g, '$1');
+  // Tips
+  if (data.tips && data.tips.length > 0) {
+    html += '<h2>Adjustment Tips</h2>';
+    html += '<ul>';
+    for (var tip = 0; tip < data.tips.length; tip++) {
+      html += '<li>' + escapeHtml(data.tips[tip]) + '</li>';
+    }
+    html += '</ul>';
+  }
 
   return html;
 }
@@ -286,17 +122,6 @@ function resetForm() {
   document.getElementById('loading-section').style.display = 'none';
   document.getElementById('output-section').style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function switchTab(tab) {
-  document.querySelectorAll('.tab').forEach(function (t) {
-    t.classList.toggle('active', t.dataset.tab === tab);
-  });
-  document.querySelectorAll('.tab-content').forEach(function (c) {
-    c.classList.remove('active');
-  });
-  var el = document.getElementById('tab-' + tab);
-  if (el) el.classList.add('active');
 }
 
 function copyBuild() {
@@ -330,10 +155,10 @@ function exportBuild() {
   doc += 'ul, ol { margin: 8px 0 12px 20px; color: #ccc; } li { margin-bottom: 4px; }\n';
   doc += 'table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; background: #1a1a1a; border: 1px solid #2a2a2a; }\n';
   doc += 'th { background: #222; color: #e8212b; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; padding: 8px 12px; text-align: left; font-weight: 600; }\n';
-  doc += 'td { padding: 6px 12px; border-top: 1px solid #222; font-size: 13px; } td:last-child { color: #fff; font-weight: 600; text-align: right; }\n';
+  doc += 'td { padding: 6px 12px; border-top: 1px solid #222; font-size: 13px; } td:first-child { color: #888; } td:last-child { color: #fff; font-weight: 600; }\n';
   doc += 'hr { border: none; border-top: 1px solid #2a2a2a; margin: 20px 0; }\n';
-  doc += 'blockquote { border-left: 3px solid #e8212b; padding: 8px 14px; margin: 10px 0; background: #1a1a1a; color: #aaa; }\n';
-  doc += 'code { background: #1a1a1a; padding: 2px 6px; border-radius: 3px; font-size: 13px; color: #e8212b; }\n';
+  doc += 'blockquote { border-left: 3px solid #e8212b; padding: 8px 14px; margin: 10px 0; background: #1a1a1a; color: #aaa; font-size: 13px; }\n';
+  doc += '.tune-note { font-size: 12px; color: #777; margin-top: -8px; margin-bottom: 16px; }\n';
   doc += '</style>\n</head>\n<body>\n';
   doc += '<h1>' + escapeHtml(title) + '</h1>\n';
   doc += '<p class="subtitle">' + escapeHtml(subtitle) + '</p>\n';
