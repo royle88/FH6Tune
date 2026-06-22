@@ -78,8 +78,16 @@
     </div>
 
     <div class="form-group">
-      <label>Available Engine Swaps (optional, tick all that apply)</label>
-      <div class="engine-swap-container" id="engine-swap-container"></div>
+      <label>Engine Swap</label>
+      <div class="option-group" style="grid-template-columns: repeat(2, 1fr);">
+        <label class="option-label"><input type="radio" name="engine-swap-toggle" value="no" checked onchange="toggleEngineInput()"> No</label>
+        <label class="option-label"><input type="radio" name="engine-swap-toggle" value="yes" onchange="toggleEngineInput()"> Yes</label>
+      </div>
+    </div>
+    <div class="form-group" id="engine-swap-input-group" style="display:none;">
+      <label for="engine-swap-text">Available Engines</label>
+      <textarea id="engine-swap-text" rows="3" placeholder="Enter engine codes as shown in Forza, separated by commas&#10;e.g. 2.0L I4-T, 3.8L V6-TT, 6.2L V8"></textarea>
+      <div class="engine-swap-hint">Use the exact Forza engine codes, e.g. 1.6L I4 Turbo Rally, 2.6L 4 Rotor Racing</div>
     </div>
 
     <button class="btn btn-primary btn-full" id="btn-generate" onclick="generate()">Build My Tune</button>

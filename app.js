@@ -1,4 +1,3 @@
-renderEngineSwaps();
 populateMakes();
 
 function populateMakes() {
@@ -58,11 +57,33 @@ function populateCars() {
   }
 }
 
+function toggleEngineInput() {
+  var toggle = document.querySelector('input[name="engine-swap-toggle"]:checked');
+  var group = document.getElementById('engine-swap-input-group');
+  group.style.display = (toggle && toggle.value === 'yes') ? 'block' : 'none';
+  if (toggle && toggle.value === 'no') {
+    document.getElementById('engine-swap-text').value = '';
+  }
+}
+
 function getSelectedEngines() {
-  var checked = document.querySelectorAll('input[name="engine-swap"]:checked');
-  var engines = [];
-  checked.forEach(function (cb) { engines.push(cb.value); });
-  return engines;
+  var toggle = document.querySelector('input[name="engine-swap-toggle"]:checked');
+  if (!toggle || toggle.value === 'no') return [];
+  var raw = document.getElementById('engine-swap-text').value;
+  if (!raw.trim()) return [];
+  var parts = raw.split(',');
+  var matched = [];
+  for (var i = 0; i < parts.length; i++) {
+    var input = parts[i].trim().toLowerCase();
+    if (!input) continue;
+    for (var j = 0; j < ENGINE_SWAPS.length; j++) {
+      if (ENGINE_SWAPS[j].toLowerCase() === input) {
+        matched.push(ENGINE_SWAPS[j]);
+        break;
+      }
+    }
+  }
+  return matched;
 }
 
 function generate() {
@@ -201,6 +222,12 @@ function resetForm() {
   document.getElementById('car-model').disabled = true;
   document.getElementById('car-name').innerHTML = '<option value="">Select car</option>';
   document.getElementById('car-name').disabled = true;
+  var noRadio = document.querySelector('input[name="engine-swap-toggle"][value="no"]');
+  if (noRadio) noRadio.checked = true;
+  var engineText = document.getElementById('engine-swap-text');
+  if (engineText) engineText.value = '';
+  var engineGroup = document.getElementById('engine-swap-input-group');
+  if (engineGroup) engineGroup.style.display = 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 

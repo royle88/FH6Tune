@@ -120,16 +120,6 @@ function recommendEngine(engines, discipline) {
   return scored[0];
 }
 
-function renderEngineSwaps() {
-  var container = document.getElementById('engine-swap-container');
-  if (!container) return;
-  var html = '';
-  for (var i = 0; i < ENGINE_SWAPS.length; i++) {
-    var id = 'engine-' + i;
-    html += '<label class="engine-label"><input type="checkbox" name="engine-swap" value="' + ENGINE_SWAPS[i] + '" id="' + id + '"> ' + ENGINE_SWAPS[i] + '</label>';
-  }
-  container.innerHTML = html;
-}
 
 var CLASS_SCALE = { D: 0.45, C: 0.55, B: 0.65, A: 0.8, S1: 0.9, S2: 1.0, R: 1.0 };
 
