@@ -48,12 +48,13 @@ function populateCars() {
   var cars = CAR_DATABASE[make][model];
   for (var i = 0; i < cars.length; i++) {
     var opt = document.createElement('option');
-    opt.value = cars[i];
-    opt.textContent = cars[i];
+    opt.value = cars[i].name;
+    opt.textContent = cars[i].name;
+    opt.dataset.weight = cars[i].weight;
     carSel.appendChild(opt);
   }
   if (cars.length === 1) {
-    carSel.value = cars[0];
+    carSel.value = cars[0].name;
   }
 }
 
@@ -89,16 +90,20 @@ function generate() {
     return;
   }
 
+  var carSelEl = document.getElementById('car-name');
+  var selectedOpt = carSelEl.options[carSelEl.selectedIndex];
+  var carWeight = parseInt(selectedOpt.dataset.weight, 10) || 1400;
+
   document.getElementById('output-title').textContent = carName;
   document.getElementById('output-subtitle').textContent =
-    carClass + ' | ' + drivetrain + ' | ' + data.name;
+    carClass + ' | ' + drivetrain + ' | ' + data.name + ' | ' + carWeight + ' kg';
 
   document.getElementById('input-section').style.display = 'none';
   document.getElementById('loading-section').style.display = 'block';
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -106,7 +111,7 @@ function generate() {
   }, 600);
 }
 
-function buildGuide(data, cls, dt, engineSwaps, discipline) {
+function buildGuide(data, cls, dt, engineSwaps, discipline, weight) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
@@ -159,7 +164,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline) {
   // Tuning
   html += '<h2>Tuning</h2>';
 
-  var tuning = data.getTuning(cls, dt);
+  var tuning = data.getTuning(cls, dt, weight);
   for (var t = 0; t < tuning.length; t++) {
     var sec = tuning[t];
     html += '<h3>' + escapeHtml(sec.name) + '</h3>';

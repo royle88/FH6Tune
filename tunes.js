@@ -147,6 +147,12 @@ function scaleValue(cls, base, low) {
   return Math.round((low + (base - low) * s) * 10) / 10;
 }
 
+var REFERENCE_WEIGHT = 1400;
+
+function weightScale(weight) {
+  return (weight || REFERENCE_WEIGHT) / REFERENCE_WEIGHT;
+}
+
 var KNOWLEDGE = {
 
   drift: {
@@ -209,8 +215,9 @@ var KNOWLEDGE = {
       return parts;
     },
 
-    getTuning: function (cls, dt) {
+    getTuning: function (cls, dt, weight) {
       var sections = [];
+      var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Pressure', value: '29.0 PSI' },
@@ -236,22 +243,22 @@ var KNOWLEDGE = {
       ], note: 'Aggressive front camber keeps the front tyres planted at full steering lock. Minimal rear camber maximises the rear contact patch for controlled slides. Front toe-out sharpens initial turn-in. Rear toe-in stabilises the rear during transitions. Maximum caster gives strong self-steer effect for maintaining angle.' });
 
       sections.push({ name: 'Anti-Roll Bars', values: [
-        { label: 'Front', value: scaleValue(cls, 28.0, 20.0).toFixed(1) },
-        { label: 'Rear', value: scaleValue(cls, 10.0, 6.0).toFixed(1) }
+        { label: 'Front', value: (scaleValue(cls, 28.0, 20.0) * wm).toFixed(1) },
+        { label: 'Rear', value: (scaleValue(cls, 10.0, 6.0) * wm).toFixed(1) }
       ], note: 'A stiff front ARB with a soft rear ARB promotes oversteer and makes it easier to initiate drifts. If the car snaps too aggressively, soften the front slightly. If the rear feels too stable, soften the rear further.' });
 
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: scaleValue(cls, 73.0, 45.0).toFixed(1) + ' kgf/mm' },
-        { label: 'Rear Springs', value: scaleValue(cls, 55.0, 35.0).toFixed(1) + ' kgf/mm' },
+        { label: 'Front Springs', value: (scaleValue(cls, 4088, 2520) * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: (scaleValue(cls, 3080, 1960) * wm).toFixed(0) + ' lbs/in' },
         { label: 'Front Ride Height', value: scaleValue(cls, 12.5, 14.0).toFixed(1) + ' cm' },
         { label: 'Rear Ride Height', value: scaleValue(cls, 12.0, 13.5).toFixed(1) + ' cm' }
       ], note: 'Stiffer front springs help weight transfer to the rear during initiation. Softer rear springs keep the back end planted enough for control without killing the slide. Lower ride height improves responsiveness but do not bottom out.' });
 
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: '8.0' },
-        { label: 'Rear Rebound', value: '6.5' },
-        { label: 'Front Bump', value: '3.0' },
-        { label: 'Rear Bump', value: '2.5' }
+        { label: 'Front Rebound', value: (8.0 * wm).toFixed(1) },
+        { label: 'Rear Rebound', value: (6.5 * wm).toFixed(1) },
+        { label: 'Front Bump', value: (3.0 * wm).toFixed(1) },
+        { label: 'Rear Bump', value: (2.5 * wm).toFixed(1) }
       ], note: 'Higher front rebound resists weight transfer back to the front, keeping the rear light and loose. Lower bump values let the suspension absorb kerbs and bumps without unsettling the car mid-drift.' });
 
       sections.push({ name: 'Aero', values: [
@@ -336,12 +343,12 @@ var KNOWLEDGE = {
       ], note: 'Race transmission lets you optimise gear ratios for specific circuits. Race differential is essential for controlling wheelspin on corner exit.' });
 
       parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Race']) },
+        { part: 'Tyre Compound', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Slicks']) },
         { part: 'Front Tyre Width', level: upgradeLevel(cls, ['Stock', '245mm', '255mm', '275mm']) },
         { part: 'Rear Tyre Width', level: upgradeLevel(cls, ['Stock', '265mm', '285mm', '305mm']) },
         { part: 'Rim Style', level: 'Lightest available' },
         { part: 'Rim Size', level: 'Stock (lighter = better)' }
-      ], note: 'Tyres are the single biggest PI investment for grip. Wider is generally better but costs more PI. For tight PI budgets, Sport compound with wider rims can outperform Race compound on narrow rims.' });
+      ], note: 'Tyres are the single biggest PI investment for grip. Wider is generally better but costs more PI. For tight PI budgets, Sport compound with wider rims can outperform Slicks on narrow rims.' });
 
       parts.push({ category: 'Aero', items: [
         { part: 'Front Bumper', level: upgradeLevel(cls, ['Stock', 'Stock', 'Forza Aero', 'Forza Aero']) },
@@ -351,8 +358,9 @@ var KNOWLEDGE = {
       return parts;
     },
 
-    getTuning: function (cls, dt) {
+    getTuning: function (cls, dt, weight) {
       var sections = [];
+      var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Pressure', value: scaleValue(cls, 31.0, 29.0).toFixed(1) + ' PSI' },
@@ -372,7 +380,7 @@ var KNOWLEDGE = {
         { label: 'Caster', value: scaleValue(cls, 5.5, 4.5).toFixed(1) }
       ], note: 'Moderate camber compensates for body roll in fast corners to keep the full tyre surface on the road. Too much camber hurts straight-line braking grip. Neutral toe is fastest in a straight line; tiny toe-out on the front improves turn-in slightly.' });
 
-      var frontArb = scaleValue(cls, 24.0, 15.0);
+      var frontArb = scaleValue(cls, 24.0, 15.0) * wm;
       var rearArb = dt === 'FWD' ? frontArb + 4 : frontArb - 3;
       sections.push({ name: 'Anti-Roll Bars', values: [
         { label: 'Front', value: frontArb.toFixed(1) },
@@ -382,20 +390,20 @@ var KNOWLEDGE = {
         : 'Slightly stiffer front than rear gives a safe, mildly understeering balance. If you want a more neutral car, bring the rear closer to the front value. If the rear steps out too much on corner exit, increase the front further.'
       });
 
-      var frontSpring = scaleValue(cls, 75.0, 40.0);
-      var rearSpring = dt === 'FWD' ? frontSpring - 8 : frontSpring - 5;
+      var frontSpring = scaleValue(cls, 4200, 2240) * wm;
+      var rearSpring = dt === 'FWD' ? frontSpring - 448 : frontSpring - 280;
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: frontSpring.toFixed(1) + ' kgf/mm' },
-        { label: 'Rear Springs', value: rearSpring.toFixed(1) + ' kgf/mm' },
+        { label: 'Front Springs', value: frontSpring.toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: rearSpring.toFixed(0) + ' lbs/in' },
         { label: 'Front Ride Height', value: scaleValue(cls, 11.0, 13.5).toFixed(1) + ' cm' },
         { label: 'Rear Ride Height', value: scaleValue(cls, 11.5, 14.0).toFixed(1) + ' cm' }
       ], note: 'Stiffer springs reduce body roll and improve responsiveness. Lower ride height lowers the centre of gravity for better cornering. Keep the rear slightly higher than the front to promote rear-end grip and stability under braking.' });
 
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: scaleValue(cls, 7.5, 5.0).toFixed(1) },
-        { label: 'Rear Rebound', value: scaleValue(cls, 7.0, 4.5).toFixed(1) },
-        { label: 'Front Bump', value: scaleValue(cls, 4.5, 3.0).toFixed(1) },
-        { label: 'Rear Bump', value: scaleValue(cls, 4.0, 2.5).toFixed(1) }
+        { label: 'Front Rebound', value: (scaleValue(cls, 7.5, 5.0) * wm).toFixed(1) },
+        { label: 'Rear Rebound', value: (scaleValue(cls, 7.0, 4.5) * wm).toFixed(1) },
+        { label: 'Front Bump', value: (scaleValue(cls, 4.5, 3.0) * wm).toFixed(1) },
+        { label: 'Rear Bump', value: (scaleValue(cls, 4.0, 2.5) * wm).toFixed(1) }
       ], note: 'Rebound controls how quickly the suspension extends after compression. Higher rebound keeps the car stable during weight transfer. Bump controls how the suspension absorbs impacts. Keep bump lower than rebound as a general rule.' });
 
       sections.push({ name: 'Aero', values: [
@@ -468,14 +476,14 @@ var KNOWLEDGE = {
       return base;
     },
 
-    getTuning: function (cls, dt) {
-      var sections = KNOWLEDGE.road.getTuning(cls, dt);
+    getTuning: function (cls, dt, weight) {
+      var sections = KNOWLEDGE.road.getTuning(cls, dt, weight);
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
           sec.values.forEach(function (v) {
-            if (v.label.indexOf('Springs') !== -1 && v.value.indexOf('kgf') !== -1) {
+            if (v.label.indexOf('Springs') !== -1 && v.value.indexOf('lbs') !== -1) {
               var num = parseFloat(v.value);
-              v.value = (num * 0.9).toFixed(1) + ' kgf/mm';
+              v.value = (num * 0.9).toFixed(0) + ' lbs/in';
             }
           });
           sec.note = 'Slightly softer springs than road racing help absorb bumps and uneven surfaces found on street circuits. This improves mechanical grip on rough roads.';
@@ -552,8 +560,9 @@ var KNOWLEDGE = {
       return parts;
     },
 
-    getTuning: function (cls, dt) {
+    getTuning: function (cls, dt, weight) {
       var sections = [];
+      var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Pressure', value: '25.0 PSI' },
@@ -574,21 +583,21 @@ var KNOWLEDGE = {
       ], note: 'Minimal camber and neutral toe give the widest contact patch on uneven ground.' });
 
       sections.push({ name: 'Anti-Roll Bars', values: [
-        { label: 'Front', value: '10.0 to 15.0' },
-        { label: 'Rear', value: '10.0 to 15.0' }
+        { label: 'Front', value: (10.0 * wm).toFixed(1) + ' to ' + (15.0 * wm).toFixed(1) },
+        { label: 'Rear', value: (10.0 * wm).toFixed(1) + ' to ' + (15.0 * wm).toFixed(1) }
       ], note: 'Soft, balanced ARBs let each wheel move independently over rough terrain. This keeps all four tyres in contact with the ground as much as possible.' });
 
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: '30.0 to 40.0 kgf/mm' },
-        { label: 'Rear Springs', value: '30.0 to 40.0 kgf/mm' },
+        { label: 'Front Springs', value: (1680 * wm).toFixed(0) + ' to ' + (2240 * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: (1680 * wm).toFixed(0) + ' to ' + (2240 * wm).toFixed(0) + ' lbs/in' },
         { label: 'Ride Height', value: 'Maximum' }
       ], note: 'Soft springs absorb bumps and jumps. Maximum ride height clears obstacles and prevents bottoming out.' });
 
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: '5.0 to 6.0' },
-        { label: 'Rear Rebound', value: '5.0 to 6.0' },
-        { label: 'Front Bump', value: '2.5 to 3.5' },
-        { label: 'Rear Bump', value: '2.5 to 3.5' }
+        { label: 'Front Rebound', value: (5.0 * wm).toFixed(1) + ' to ' + (6.0 * wm).toFixed(1) },
+        { label: 'Rear Rebound', value: (5.0 * wm).toFixed(1) + ' to ' + (6.0 * wm).toFixed(1) },
+        { label: 'Front Bump', value: (2.5 * wm).toFixed(1) + ' to ' + (3.5 * wm).toFixed(1) },
+        { label: 'Rear Bump', value: (2.5 * wm).toFixed(1) + ' to ' + (3.5 * wm).toFixed(1) }
       ], note: 'Moderate damping prevents the car from bouncing wildly after jumps while still absorbing impacts.' });
 
       sections.push({ name: 'Brakes', values: [
@@ -632,21 +641,22 @@ var KNOWLEDGE = {
       return KNOWLEDGE.offroad.getUpgrades(cls, dt);
     },
 
-    getTuning: function (cls, dt) {
-      var sections = KNOWLEDGE.offroad.getTuning(cls, dt);
+    getTuning: function (cls, dt, weight) {
+      var sections = KNOWLEDGE.offroad.getTuning(cls, dt, weight);
+      var wm = weightScale(weight);
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
           sec.values = [
-            { label: 'Front Springs', value: '35.0 to 50.0 kgf/mm' },
-            { label: 'Rear Springs', value: '35.0 to 50.0 kgf/mm' },
+            { label: 'Front Springs', value: (1960 * wm).toFixed(0) + ' to ' + (2800 * wm).toFixed(0) + ' lbs/in' },
+            { label: 'Rear Springs', value: (1960 * wm).toFixed(0) + ' to ' + (2800 * wm).toFixed(0) + ' lbs/in' },
             { label: 'Ride Height', value: 'Maximum or near maximum' }
           ];
           sec.note = 'Slightly stiffer springs than pure off-road help with the faster tarmac sections. Still soft enough to handle rough terrain.';
         }
         if (sec.name === 'Anti-Roll Bars') {
           sec.values = [
-            { label: 'Front', value: '12.0 to 18.0' },
-            { label: 'Rear', value: '12.0 to 18.0' }
+            { label: 'Front', value: (12.0 * wm).toFixed(1) + ' to ' + (18.0 * wm).toFixed(1) },
+            { label: 'Rear', value: (12.0 * wm).toFixed(1) + ' to ' + (18.0 * wm).toFixed(1) }
           ];
           sec.note = 'Slightly stiffer than off-road to reduce body roll on the faster sections, but still soft enough for terrain.';
         }
@@ -701,7 +711,7 @@ var KNOWLEDGE = {
       }
 
       parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: 'Drag (if available) or Race' },
+        { part: 'Tyre Compound', level: 'Drag (if available) or Slicks' },
         { part: 'Rear Tyre Width', level: 'Maximum' },
         { part: 'Front Tyre Width', level: 'Stock or narrow' },
         { part: 'Rim Size', level: 'Smallest available (weight saving)' }
@@ -710,7 +720,7 @@ var KNOWLEDGE = {
       return parts;
     },
 
-    getTuning: function (cls, dt) {
+    getTuning: function (cls, dt, weight) {
       var sections = [];
 
       sections.push({ name: 'Tyres', values: [
