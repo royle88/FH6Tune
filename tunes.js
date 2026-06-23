@@ -149,70 +149,16 @@ var KNOWLEDGE = {
     name: 'Drift',
     overview: 'Drift builds prioritise controlled oversteer, big steering angles, and smooth sustained slides. The goal is a loose rear end with a planted front so you can hold angle through corners. Power delivery matters more than peak horsepower, so you want strong mid-range torque to keep the wheels spinning without snapping the car around.',
 
-    getUpgrades: function (cls, dt) {
-      var parts = [];
-
-      parts.push({ category: 'Engine', items: [
-        { part: 'Intake', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Race']) },
-        { part: 'Exhaust', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Ignition', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Camshaft', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Valves', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Fuel System', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Oil and Cooling', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) }
-      ]});
-
-      parts.push({ category: 'Aspiration', items: [
-        { part: 'Forced Induction', level: upgradeLevel(cls, ['Stock', 'Sport Turbo', 'Race Turbo', 'Race Turbo']) },
-        { part: 'Intercooler', level: upgradeLevel(cls, ['Stock', 'Sport', 'Race', 'Race']) }
-      ], note: 'A single turbo gives smooth, controllable power. Superchargers provide more linear delivery if you prefer predictable throttle response. For lower classes, naturally aspirated may be fine.' });
-
-      parts.push({ category: 'Platform and Handling', items: [
-        { part: 'Brakes', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Race']) },
-        { part: 'Springs and Dampers', level: upgradeLevel(cls, ['Street', 'Race', 'Race', 'Race']) },
-        { part: 'Anti-Roll Bars', level: upgradeLevel(cls, ['Street', 'Race', 'Race', 'Race']) },
-        { part: 'Roll Cage', level: upgradeLevel(cls, ['Stock', 'Stock', 'Sport', 'Race']) },
-        { part: 'Weight Reduction', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Chassis Stiffening', level: upgradeLevel(cls, ['Stock', 'Stock', 'Sport', 'Race']) }
-      ], note: 'Race springs and dampers are essential for drift tuning as they unlock the full adjustment range. Weight reduction helps rotation but too much makes the car twitchy.' });
-
-      parts.push({ category: 'Drivetrain', items: [
-        { part: 'Clutch', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Transmission', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) },
-        { part: 'Driveline', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Differential', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) }
-      ], note: 'Race transmission is highly recommended for drift so you can fine-tune individual gear ratios. Race differential is essential for locking the rear wheels together under power.' });
-
-      if (dt === 'FWD') {
-        parts.push({ category: 'Drivetrain Conversion', items: [
-          { part: 'Drivetrain Swap', level: 'RWD (Strongly Recommended)' }
-        ], note: 'FWD cars cannot drift effectively. A RWD conversion is essential. This will use a large chunk of your PI budget, so plan your other upgrades around it.' });
-      }
-
-      parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: 'Drift' },
-        { part: 'Front Tyre Width', level: upgradeLevel(cls, ['Stock', 'Stock', '245mm', '265mm']) },
-        { part: 'Rear Tyre Width', level: 'Max (usually 315mm or 325mm)' },
-        { part: 'Rim Style', level: 'Your choice (lightest available)' },
-        { part: 'Rim Size', level: 'Stock or +1" (aesthetic preference)' }
-      ], note: 'Drift tyres are essential. Wide rear tyres give you more smoke and a wider grip window for holding slides. Front tyres can be slightly narrower to help steering response.' });
-
-      parts.push({ category: 'Aero and Appearance', items: [
-        { part: 'Front Bumper', level: upgradeLevel(cls, ['Stock', 'Stock', 'Forza Aero', 'Forza Aero']) },
-        { part: 'Rear Wing', level: upgradeLevel(cls, ['Stock', 'Stock', 'Forza Aero', 'Forza Aero']) }
-      ], note: 'Aero helps stability at speed but can make initiation harder. For lower classes, stock aero is fine. At S1 and above, a rear wing helps control at high speed entries. Adjust downforce in tuning to taste.' });
-
-      return parts;
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = [];
       var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
+        { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', 'Stock', '245mm', '265mm']) },
+        { label: 'Rear Tyre Width', value: 'Max available (315mm or 325mm)' },
         { label: 'Front Pressure', value: '29.0 PSI' },
         { label: 'Rear Pressure', value: '39.0 to 41.0 PSI' }
-      ], note: 'High rear pressure reduces the contact patch, making it easier to break traction and sustain slides. Low front pressure keeps the front tyres planted for steering control at full lock.' });
+      ], note: 'Wide rear tyres give more smoke and a wider grip window for holding slides. Front can be narrower for steering response. High rear pressure reduces the contact patch to break traction more easily. Low front pressure keeps the front planted at full lock.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: scaleValue(cls, 3.80, 3.40).toFixed(2) + ' (adjust to taste)' },
@@ -238,8 +184,8 @@ var KNOWLEDGE = {
       ], note: 'A stiff front ARB with a soft rear ARB promotes oversteer and makes it easier to initiate drifts. If the car snaps too aggressively, soften the front slightly. If the rear feels too stable, soften the rear further.' });
 
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: (scaleValue(cls, 4088, 2520) * wm).toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: (scaleValue(cls, 3080, 1960) * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Front Springs', value: (scaleValue(cls, 650, 380) * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: (scaleValue(cls, 480, 280) * wm).toFixed(0) + ' lbs/in' },
         { label: 'Front Ride Height', value: scaleValue(cls, 12.5, 14.0).toFixed(1) + ' cm' },
         { label: 'Rear Ride Height', value: scaleValue(cls, 12.0, 13.5).toFixed(1) + ' cm' }
       ], note: 'Stiffer front springs help weight transfer to the rear during initiation. Softer rear springs keep the back end planted enough for control without killing the slide. Lower ride height improves responsiveness but do not bottom out.' });
@@ -252,8 +198,8 @@ var KNOWLEDGE = {
       ], note: 'Higher front rebound resists weight transfer back to the front, keeping the rear light and loose. Lower bump values let the suspension absorb kerbs and bumps without unsettling the car mid-drift.' });
 
       sections.push({ name: 'Aero', values: [
-        { label: 'Front Downforce', value: scaleValue(cls, 80, 50).toFixed(0) + ' (if fitted)' },
-        { label: 'Rear Downforce', value: scaleValue(cls, 60, 30).toFixed(0) + ' (if fitted)' }
+        { label: 'Front Downforce', value: '60% to 70% of range (if fitted)' },
+        { label: 'Rear Downforce', value: '30% to 40% of range (if fitted)' }
       ], note: 'Less rear downforce than front makes the rear end looser at speed. If you struggle to hold angle at high speed, increase rear downforce slightly. If initiation is difficult, reduce rear further.' });
 
       sections.push({ name: 'Brakes', values: [
@@ -298,64 +244,16 @@ var KNOWLEDGE = {
     name: 'Road Racing',
     overview: 'Road racing builds are all about consistent lap times on tarmac circuits. You want maximum grip, sharp turn-in, stable braking, and strong corner exit traction. The car should be predictable and confidence-inspiring, with a slight tendency towards understeer for safety. Aero is crucial at higher classes for maintaining grip through fast corners.',
 
-    getUpgrades: function (cls, dt) {
-      var parts = [];
-
-      parts.push({ category: 'Engine', items: [
-        { part: 'Intake', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Exhaust', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Ignition', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Camshaft', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Valves', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Fuel System', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Oil and Cooling', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) }
-      ]});
-
-      parts.push({ category: 'Aspiration', items: [
-        { part: 'Forced Induction', level: upgradeLevel(cls, ['Stock', 'Sport', 'Race', 'Race']) },
-        { part: 'Intercooler', level: upgradeLevel(cls, ['Stock', 'Sport', 'Race', 'Race']) }
-      ], note: 'Centrifugal superchargers offer the most linear power delivery for road racing. Turbos give more peak power but can cause lag on corner exit. For NA cars, keep them NA if the PI budget is tight.' });
-
-      parts.push({ category: 'Platform and Handling', items: [
-        { part: 'Brakes', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Springs and Dampers', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) },
-        { part: 'Anti-Roll Bars', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) },
-        { part: 'Roll Cage', level: upgradeLevel(cls, ['Stock', 'Sport', 'Race', 'Race']) },
-        { part: 'Weight Reduction', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Chassis Stiffening', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) }
-      ], note: 'Race brakes, springs, and ARBs are the foundation of a competitive road car. Weight reduction is valuable but costs significant PI. Prioritise handling upgrades over power for consistent lap times.' });
-
-      parts.push({ category: 'Drivetrain', items: [
-        { part: 'Clutch', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Transmission', level: upgradeLevel(cls, ['Sport', 'Sport', 'Race', 'Race']) },
-        { part: 'Driveline', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Differential', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) }
-      ], note: 'Race transmission lets you optimise gear ratios for specific circuits. Race differential is essential for controlling wheelspin on corner exit.' });
-
-      parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Slicks']) },
-        { part: 'Front Tyre Width', level: upgradeLevel(cls, ['Stock', '245mm', '255mm', '275mm']) },
-        { part: 'Rear Tyre Width', level: upgradeLevel(cls, ['Stock', '265mm', '285mm', '305mm']) },
-        { part: 'Rim Style', level: 'Lightest available' },
-        { part: 'Rim Size', level: 'Stock (lighter = better)' }
-      ], note: 'Tyres are the single biggest PI investment for grip. Wider is generally better but costs more PI. For tight PI budgets, Sport compound with wider rims can outperform Slicks on narrow rims.' });
-
-      parts.push({ category: 'Aero', items: [
-        { part: 'Front Bumper', level: upgradeLevel(cls, ['Stock', 'Stock', 'Forza Aero', 'Forza Aero']) },
-        { part: 'Rear Wing', level: upgradeLevel(cls, ['Stock', 'Forza Aero', 'Forza Aero', 'Forza Aero']) }
-      ], note: 'Aero is critical for road racing at A class and above. The Forza Aero parts give adjustable downforce which lets you fine-tune the grip balance. Always fit both front and rear if your PI allows it.' });
-
-      return parts;
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = [];
       var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
+        { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', '245mm', '255mm', '275mm']) },
+        { label: 'Rear Tyre Width', value: upgradeLevel(cls, ['Stock', '265mm', '285mm', '305mm']) },
         { label: 'Front Pressure', value: scaleValue(cls, 31.0, 29.0).toFixed(1) + ' PSI' },
         { label: 'Rear Pressure', value: scaleValue(cls, 31.0, 29.0).toFixed(1) + ' PSI' }
-      ], note: 'Equal pressures front and rear give balanced grip. Lower pressures increase the contact patch for more grip but can make the car feel sluggish. Higher classes benefit from slightly higher pressures for sharper response.' });
+      ], note: 'Wider tyres give more grip but cost more PI. For tight budgets, prioritise rear width for traction. Equal pressures front and rear give balanced grip. Higher classes benefit from slightly higher pressures for sharper response.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: 'Adjust to suit circuit' },
@@ -380,8 +278,8 @@ var KNOWLEDGE = {
         : 'Slightly stiffer front than rear gives a safe, mildly understeering balance. If you want a more neutral car, bring the rear closer to the front value. If the rear steps out too much on corner exit, increase the front further.'
       });
 
-      var frontSpring = scaleValue(cls, 4200, 2240) * wm;
-      var rearSpring = dt === 'FWD' ? frontSpring - 448 : frontSpring - 280;
+      var frontSpring = scaleValue(cls, 700, 300) * wm;
+      var rearSpring = dt === 'FWD' ? frontSpring - 80 : frontSpring - 50;
       sections.push({ name: 'Springs', values: [
         { label: 'Front Springs', value: frontSpring.toFixed(0) + ' lbs/in' },
         { label: 'Rear Springs', value: rearSpring.toFixed(0) + ' lbs/in' },
@@ -397,8 +295,8 @@ var KNOWLEDGE = {
       ], note: 'Rebound controls how quickly the suspension extends after compression. Higher rebound keeps the car stable during weight transfer. Bump controls how the suspension absorbs impacts. Keep bump lower than rebound as a general rule.' });
 
       sections.push({ name: 'Aero', values: [
-        { label: 'Front Downforce', value: scaleValue(cls, 100, 70).toFixed(0) + ' (if fitted)' },
-        { label: 'Rear Downforce', value: scaleValue(cls, 110, 80).toFixed(0) + ' (if fitted)' }
+        { label: 'Front Downforce', value: '50% to 60% of range (if fitted)' },
+        { label: 'Rear Downforce', value: '55% to 65% of range (if fitted)' }
       ], note: 'More rear downforce than front gives a stable, understeering balance at high speed. If the car feels too heavy and understeery in fast corners, reduce rear or increase front. If the rear is unstable at speed, increase rear downforce.' });
 
       sections.push({ name: 'Brakes', values: [
@@ -449,23 +347,6 @@ var KNOWLEDGE = {
     name: 'Street Racing',
     overview: 'Street racing is similar to road racing but on mixed surfaces with traffic, tighter corners, and more elevation changes. You want a car that is quick to respond, forgiving over bumps, and strong on acceleration out of tight turns. Slightly softer suspension than full road racing helps on rougher surfaces.',
 
-    getUpgrades: function (cls, dt) {
-      var base = KNOWLEDGE.road.getUpgrades(cls, dt);
-      base.forEach(function (cat) {
-        if (cat.category === 'Platform and Handling') {
-          cat.note = 'Street racing benefits from slightly softer suspension than full road racing to cope with uneven surfaces. Race springs and dampers are still recommended for the tuning range they unlock.';
-        }
-        if (cat.category === 'Aero') {
-          cat.items = [
-            { part: 'Front Bumper', level: upgradeLevel(cls, ['Stock', 'Stock', 'Stock', 'Forza Aero']) },
-            { part: 'Rear Wing', level: upgradeLevel(cls, ['Stock', 'Stock', 'Forza Aero', 'Forza Aero']) }
-          ];
-          cat.note = 'Aero is less critical for street racing than road racing due to lower average speeds. A rear wing helps at higher classes but front aero is often unnecessary below S1.';
-        }
-      });
-      return base;
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = KNOWLEDGE.road.getTuning(cls, dt, weight);
       sections.forEach(function (sec) {
@@ -506,58 +387,16 @@ var KNOWLEDGE = {
     name: 'Off-Road',
     overview: 'Off-road builds need soft, compliant suspension to absorb bumps and jumps, combined with enough grip to handle loose surfaces. Rally tyres are essential. Ride height should be raised to clear obstacles, and the suspension should soak up rough terrain without unsettling the car.',
 
-    getUpgrades: function (cls, dt) {
-      var parts = [];
-
-      parts.push({ category: 'Engine', items: [
-        { part: 'Intake', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Race']) },
-        { part: 'Exhaust', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Ignition', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) },
-        { part: 'Camshaft', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Race']) }
-      ]});
-
-      parts.push({ category: 'Platform and Handling', items: [
-        { part: 'Brakes', level: upgradeLevel(cls, ['Street', 'Sport', 'Sport', 'Race']) },
-        { part: 'Springs and Dampers', level: 'Rally' },
-        { part: 'Anti-Roll Bars', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) },
-        { part: 'Weight Reduction', level: upgradeLevel(cls, ['Stock', 'Street', 'Sport', 'Sport']) }
-      ], note: 'Rally springs are essential for off-road. They provide the suspension travel needed to absorb jumps and rough terrain.' });
-
-      if (dt === 'RWD') {
-        parts.push({ category: 'Drivetrain Conversion', items: [
-          { part: 'Drivetrain Swap', level: 'AWD (Recommended)' }
-        ], note: 'AWD provides much better traction on loose surfaces. RWD is possible but significantly harder to control off-road.' });
-      }
-
-      parts.push({ category: 'Drivetrain', items: [
-        { part: 'Clutch', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Transmission', level: upgradeLevel(cls, ['Sport', 'Sport', 'Race', 'Race']) },
-        { part: 'Driveline', level: upgradeLevel(cls, ['Street', 'Sport', 'Race', 'Race']) },
-        { part: 'Differential', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) }
-      ]});
-
-      parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: 'Off-Road' },
-        { part: 'Tyre Width', level: 'Widest available' },
-        { part: 'Rim Size', level: 'Stock or -1" (more tyre sidewall)' }
-      ], note: 'Off-road tyres are essential. Wider tyres provide more surface area on loose ground. Smaller rims allow more tyre sidewall which acts as additional suspension.' });
-
-      parts.push({ category: 'Aero', items: [
-        { part: 'Front Bumper', level: 'Stock' },
-        { part: 'Rear Wing', level: 'Stock' }
-      ], note: 'Aero provides minimal benefit off-road at the speeds you will be travelling. Save the PI for more useful upgrades.' });
-
-      return parts;
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = [];
       var wm = weightScale(weight);
 
       sections.push({ name: 'Tyres', values: [
+        { label: 'Front Tyre Width', value: 'Widest available' },
+        { label: 'Rear Tyre Width', value: 'Widest available' },
         { label: 'Front Pressure', value: '25.0 PSI' },
         { label: 'Rear Pressure', value: '25.0 PSI' }
-      ], note: 'Low pressures maximise the contact patch on loose surfaces for better grip.' });
+      ], note: 'Off-road tyres are essential. Wider tyres provide more surface area on loose ground. Low pressures maximise the contact patch for better grip.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: 'Shorten by 10% to 15% from default' },
@@ -578,8 +417,8 @@ var KNOWLEDGE = {
       ], note: 'Soft, balanced ARBs let each wheel move independently over rough terrain. This keeps all four tyres in contact with the ground as much as possible.' });
 
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: (1680 * wm).toFixed(0) + ' to ' + (2240 * wm).toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: (1680 * wm).toFixed(0) + ' to ' + (2240 * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Front Springs', value: (200 * wm).toFixed(0) + ' to ' + (350 * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: (200 * wm).toFixed(0) + ' to ' + (350 * wm).toFixed(0) + ' lbs/in' },
         { label: 'Ride Height', value: 'Maximum' }
       ], note: 'Soft springs absorb bumps and jumps. Maximum ride height clears obstacles and prevents bottoming out.' });
 
@@ -627,18 +466,14 @@ var KNOWLEDGE = {
     name: 'Cross Country',
     overview: 'Cross country combines off-road terrain with some tarmac sections and high-speed open areas. You need a build that handles both surfaces, with slightly stiffer suspension than pure off-road to cope with the faster sections while still absorbing rough terrain.',
 
-    getUpgrades: function (cls, dt) {
-      return KNOWLEDGE.offroad.getUpgrades(cls, dt);
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = KNOWLEDGE.offroad.getTuning(cls, dt, weight);
       var wm = weightScale(weight);
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
           sec.values = [
-            { label: 'Front Springs', value: (1960 * wm).toFixed(0) + ' to ' + (2800 * wm).toFixed(0) + ' lbs/in' },
-            { label: 'Rear Springs', value: (1960 * wm).toFixed(0) + ' to ' + (2800 * wm).toFixed(0) + ' lbs/in' },
+            { label: 'Front Springs', value: (250 * wm).toFixed(0) + ' to ' + (400 * wm).toFixed(0) + ' lbs/in' },
+            { label: 'Rear Springs', value: (250 * wm).toFixed(0) + ' to ' + (400 * wm).toFixed(0) + ' lbs/in' },
             { label: 'Ride Height', value: 'Maximum or near maximum' }
           ];
           sec.note = 'Slightly stiffer springs than pure off-road help with the faster tarmac sections. Still soft enough to handle rough terrain.';
@@ -668,55 +503,15 @@ var KNOWLEDGE = {
     name: 'Drag',
     overview: 'Drag racing is pure straight-line speed. Every upgrade should focus on maximising power and traction off the line. Weight reduction is critical. The car needs to launch hard without spinning the wheels, then accelerate as fast as possible to the finish.',
 
-    getUpgrades: function (cls, dt) {
-      var parts = [];
-
-      parts.push({ category: 'Engine', items: [
-        { part: 'All Engine Parts', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) }
-      ], note: 'Max out every engine upgrade your PI budget allows. Power is everything in drag racing.' });
-
-      parts.push({ category: 'Aspiration', items: [
-        { part: 'Forced Induction', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) },
-        { part: 'Intercooler', level: upgradeLevel(cls, ['Sport', 'Race', 'Race', 'Race']) }
-      ], note: 'Twin turbo provides the most peak power for drag. The lag does not matter when you are building boost before launch.' });
-
-      parts.push({ category: 'Platform and Handling', items: [
-        { part: 'Weight Reduction', level: 'Race (if PI allows)' },
-        { part: 'Brakes', level: 'Stock (saves PI)' },
-        { part: 'Springs and Dampers', level: 'Race' },
-        { part: 'Anti-Roll Bars', level: 'Race' }
-      ], note: 'Weight reduction is the most efficient PI spend for drag. Stock brakes save PI since you barely use them. Race suspension allows tuning for launch grip.' });
-
-      parts.push({ category: 'Drivetrain', items: [
-        { part: 'Clutch', level: 'Race' },
-        { part: 'Transmission', level: 'Race' },
-        { part: 'Driveline', level: 'Race' },
-        { part: 'Differential', level: 'Race' }
-      ]});
-
-      if (dt === 'RWD' || dt === 'FWD') {
-        parts.push({ category: 'Drivetrain Conversion', items: [
-          { part: 'Drivetrain Swap', level: 'AWD (Recommended for launch traction)' }
-        ], note: 'AWD provides the best launch traction. RWD can work but requires careful launch control. The PI cost of AWD swap is usually worth it for the traction advantage.' });
-      }
-
-      parts.push({ category: 'Tyres and Rims', items: [
-        { part: 'Tyre Compound', level: 'Drag (if available) or Slicks' },
-        { part: 'Rear Tyre Width', level: 'Maximum' },
-        { part: 'Front Tyre Width', level: 'Stock or narrow' },
-        { part: 'Rim Size', level: 'Smallest available (weight saving)' }
-      ], note: 'Drag tyres provide the best launch grip. Max rear width for traction.' });
-
-      return parts;
-    },
-
     getTuning: function (cls, dt, weight) {
       var sections = [];
 
       sections.push({ name: 'Tyres', values: [
+        { label: 'Front Tyre Width', value: 'Stock or narrowest' },
+        { label: 'Rear Tyre Width', value: 'Maximum' },
         { label: 'Front Pressure', value: '35.0 PSI' },
         { label: 'Rear Pressure', value: '26.0 to 28.0 PSI' }
-      ], note: 'Low rear pressure maximises the contact patch for traction on launch. Higher front pressure reduces rolling resistance.' });
+      ], note: 'Narrow front tyres reduce rolling resistance. Max rear width for launch traction. Low rear pressure maximises the contact patch. Higher front pressure reduces drag.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: 'Short for quarter-mile, long for half-mile' },

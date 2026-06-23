@@ -137,29 +137,10 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight) {
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
 
-  // Upgrades
-  html += '<h2>Upgrades</h2>';
-
-  var upgrades = data.getUpgrades(cls, dt);
-  for (var i = 0; i < upgrades.length; i++) {
-    var cat = upgrades[i];
-    html += '<h3>' + escapeHtml(cat.category) + '</h3>';
-    html += '<table><thead><tr><th>Part</th><th>Level</th></tr></thead><tbody>';
-    for (var j = 0; j < cat.items.length; j++) {
-      html += '<tr><td>' + escapeHtml(cat.items[j].part) + '</td>';
-      html += '<td>' + escapeHtml(cat.items[j].level) + '</td></tr>';
-    }
-    html += '</tbody></table>';
-    if (cat.note) {
-      html += '<p class="tune-note">' + escapeHtml(cat.note) + '</p>';
-    }
-  }
-
   // Engine swap advice
   if (engineSwaps && engineSwaps.length > 0) {
-    html += '<h3>Engine Swap Recommendation</h3>';
+    html += '<h2>Engine Swap Recommendation</h2>';
     var best = recommendEngine(engineSwaps, discipline);
-    html += '<p>Available swaps for this car:</p>';
     html += '<table><thead><tr><th>Engine</th><th>Category</th></tr></thead><tbody>';
     for (var e = 0; e < engineSwaps.length; e++) {
       var cat = categoriseEngine(engineSwaps[e]);
@@ -178,9 +159,6 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight) {
     }
     html += '<p>' + escapeHtml(data.engineSwapAdvice) + '</p>';
   }
-
-  // PI note
-  html += '<blockquote>Every car has different PI costs per part. If you have PI headroom after fitting these upgrades, push the most impactful parts further (e.g. Sport to Race). If you are over budget, drop the least critical parts down a tier first. Handling upgrades generally give more competitive advantage than raw power.</blockquote>';
 
   // Tuning
   html += '<h2>Tuning</h2>';
