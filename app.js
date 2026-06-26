@@ -225,6 +225,33 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units) {
     html += '</ul>';
   }
 
+  // Meta tuning advice
+  html += '<h2>Tuning Method</h2>';
+  var meta = [];
+  meta.push('These values are a starting point based on your car\'s weight and class. Every car handles differently, so test and adjust in free roam or a rivals session before taking it online.');
+  meta.push('Change one setting at a time in small increments. If you change multiple things at once, you will not know which change helped or hurt.');
+  if (discipline === 'road' || discipline === 'street') {
+    meta.push('Run 3 to 5 consistent laps on a circuit you know well. Compare lap times and feel after each adjustment. If a change does not improve your time or confidence, revert it.');
+  }
+  if (discipline === 'drift') {
+    meta.push('Test in free roam on a familiar section with varied corners. Focus on how the car initiates, holds angle, and transitions. Scoring will follow once the car feels natural.');
+  }
+  if (dt === 'AWD' && discipline !== 'offroad' && discipline !== 'cross-country') {
+    meta.push('AWD cars tend to understeer. If the car pushes wide on corner entry, try increasing rear ARB or shifting the centre diff balance further rearward before changing other settings.');
+  }
+  if (dt === 'RWD' && (discipline === 'road' || discipline === 'street')) {
+    meta.push('RWD cars can oversteer under power. If the rear steps out on corner exit, reduce differential acceleration lock by 5% to 10% before stiffening suspension.');
+  }
+  if (dt === 'FWD' && discipline !== 'drift') {
+    meta.push('FWD cars understeer by nature. Stiffening the rear ARB relative to the front is the most effective way to improve turn-in. Lifting off the throttle mid-corner also helps rotate the car.');
+  }
+  meta.push('Tyre temperatures are your best diagnostic tool. If the inside edge is hotter than the outside, you have too much camber. If the outside is hotter, you need more camber or stiffer ARBs to control body roll.');
+  html += '<ul>';
+  for (var m = 0; m < meta.length; m++) {
+    html += '<li>' + escapeHtml(meta[m]) + '</li>';
+  }
+  html += '</ul>';
+
   return html;
 }
 

@@ -73,11 +73,13 @@ var ENGINE_CATEGORIES = {
   small: { label: 'Small (1.0L to 2.0L)', type: 'I3/I4/V4/R3/Rotor', traits: 'Lightweight, rev-happy, low PI cost. Good for lower classes where you need to stay within budget.' },
   mid: { label: 'Mid (2.2L to 3.8L)', type: 'I5/I6/V6/F4/F6/Rotor', traits: 'Great balance of power and weight. Turbo I6s and V6s are excellent for drift and road racing. Smooth, controllable power delivery.' },
   v8: { label: 'V8 (4.0L to 7.4L)', type: 'V8', traits: 'Strong mid-range torque, excellent for drift and road racing. The workhorse of Forza tuning. Heavier than I6s but more powerful.' },
-  big: { label: 'Large (V10/V12, 4.8L+)', type: 'V10/V12', traits: 'Maximum power but heavy and expensive on PI. Best suited for S2 and R class builds, or drag racing where raw power is everything.' }
+  big: { label: 'Large (V10/V12, 4.8L+)', type: 'V10/V12', traits: 'Maximum power but heavy and expensive on PI. Best suited for S2 and R class builds, or drag racing where raw power is everything.' },
+  hybrid: { label: 'Hybrid', type: 'Hybrid/Electric', traits: 'Instant electric torque fills gaps in the power band, giving strong acceleration from low RPM. Excellent for road racing corner exits and drag launches. Heavier than non-hybrid equivalents due to battery weight, but the torque fill makes them very driveable.' }
 };
 
 function categoriseEngine(name) {
   var lower = name.toLowerCase();
+  if (lower.indexOf('hybrid') !== -1) return 'hybrid';
   if (lower.indexOf('v12') !== -1 || lower.indexOf('v10') !== -1) return 'big';
   if (lower.indexOf('v8') !== -1) return 'v8';
   var litres = parseFloat(name);
@@ -88,7 +90,7 @@ function categoriseEngine(name) {
 function recommendEngine(engines, discipline) {
   if (!engines || engines.length === 0) return null;
 
-  var dominated = { drift: ['mid', 'v8'], road: ['mid', 'v8'], street: ['mid', 'v8'], offroad: ['mid', 'v8'], 'cross-country': ['mid', 'v8'], drag: ['big', 'v8'] };
+  var dominated = { drift: ['mid', 'v8'], road: ['mid', 'v8', 'hybrid'], street: ['mid', 'v8', 'hybrid'], offroad: ['mid', 'v8'], 'cross-country': ['mid', 'v8'], drag: ['big', 'v8', 'hybrid'] };
   var preferred = dominated[discipline] || ['mid', 'v8'];
 
   var scored = engines.map(function (eng) {
@@ -113,6 +115,11 @@ function recommendEngine(engines, discipline) {
     }
     if (lower.indexOf('rally') !== -1 && (discipline === 'offroad' || discipline === 'cross-country')) score += 5;
     if (lower.indexOf('racing') !== -1) score += 2;
+    if (cat === 'hybrid') {
+      if (discipline === 'road' || discipline === 'street') score += 4;
+      if (discipline === 'drag') score += 6;
+      if (discipline === 'drift') score -= 3;
+    }
     return { engine: eng, score: score, category: cat };
   });
 
@@ -152,6 +159,12 @@ var KNOWLEDGE = {
     getTuning: function (cls, dt, weight) {
       var sections = [];
       var wm = weightScale(weight);
+
+      if (dt === 'FWD') {
+        sections.push({ name: 'Drivetrain Warning', values: [
+          { label: 'FWD Drift', value: 'Not recommended' }
+        ], note: 'FWD cars cannot drift effectively. The driven front wheels fight against steering angle, making sustained slides nearly impossible. A RWD drivetrain swap is strongly recommended before attempting to drift this car. The swap will cost significant PI, so plan your other parts around it. The tuning values below assume you have converted to RWD or AWD.' });
+      }
 
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', 'Stock', '245mm', '265mm']) },
@@ -390,6 +403,12 @@ var KNOWLEDGE = {
     getTuning: function (cls, dt, weight) {
       var sections = [];
       var wm = weightScale(weight);
+
+      if (dt === 'RWD') {
+        sections.push({ name: 'Drivetrain Warning', values: [
+          { label: 'RWD Off-Road', value: 'Not recommended' }
+        ], note: 'RWD cars struggle significantly on loose surfaces. Without front-wheel drive, you lose traction out of corners and on climbs. An AWD conversion is strongly recommended for competitive off-road racing. The tuning values below will still work, but expect the car to be much harder to control than an AWD equivalent.' });
+      }
 
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Tyre Width', value: 'Widest available' },
