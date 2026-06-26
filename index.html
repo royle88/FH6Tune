@@ -90,6 +90,14 @@
       <div class="engine-swap-hint">Use the exact Forza engine codes, e.g. 1.6L I4 Turbo Rally, 2.6L 4 Rotor Racing</div>
     </div>
 
+    <div class="form-group">
+      <label>Units</label>
+      <div class="option-group" style="grid-template-columns: repeat(2, 1fr);">
+        <label class="option-label"><input type="radio" name="units" value="imperial" checked> lbs / inches</label>
+        <label class="option-label"><input type="radio" name="units" value="metric"> kg / cm</label>
+      </div>
+    </div>
+
     <button class="btn btn-primary btn-full" id="btn-generate" onclick="generate()">Build My Tune</button>
   </section>
 

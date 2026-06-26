@@ -103,6 +103,8 @@ function generate() {
 
   var drivetrain = drivetrainEl.value;
   var discipline = disciplineEl.value;
+  var unitsEl = document.querySelector('input[name="units"]:checked');
+  var units = unitsEl ? unitsEl.value : 'imperial';
   var engineSwaps = getSelectedEngines();
   var data = KNOWLEDGE[discipline];
 
@@ -116,15 +118,18 @@ function generate() {
   var carWeight = parseInt(selectedOpt.dataset.weight, 10) || 1400;
 
   document.getElementById('output-title').textContent = carName;
+  var weightDisplay = units === 'imperial'
+    ? Math.round(carWeight * 2.2046) + ' lbs'
+    : carWeight + ' kg';
   document.getElementById('output-subtitle').textContent =
-    carClass + ' | ' + drivetrain + ' | ' + data.name + ' | ' + carWeight + ' kg';
+    carClass + ' | ' + drivetrain + ' | ' + data.name + ' | ' + weightDisplay;
 
   document.getElementById('input-section').style.display = 'none';
   document.getElementById('loading-section').style.display = 'block';
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight, units);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -132,7 +137,38 @@ function generate() {
   }, 600);
 }
 
-function buildGuide(data, cls, dt, engineSwaps, discipline, weight) {
+function convertTuningUnits(sections, units) {
+  if (units === 'metric') {
+    sections.forEach(function (sec) {
+      sec.values.forEach(function (v) {
+        var val = v.value;
+        if (val.indexOf('lbs/in') !== -1) {
+          val = val.replace(/(\d+\.?\d*)\s+to\s+(\d+\.?\d*)\s+lbs\/in/g, function (m, lo, hi) {
+            return (parseFloat(lo) / 56).toFixed(1) + ' to ' + (parseFloat(hi) / 56).toFixed(1) + ' kgf/mm';
+          });
+          val = val.replace(/(\d+\.?\d*)\s+lbs\/in/g, function (m, n) {
+            return (parseFloat(n) / 56).toFixed(1) + ' kgf/mm';
+          });
+          v.value = val;
+        }
+      });
+    });
+  } else {
+    sections.forEach(function (sec) {
+      sec.values.forEach(function (v) {
+        var val = v.value;
+        if (val.indexOf(' cm') !== -1) {
+          val = val.replace(/(\d+\.?\d*)\s*cm/g, function (m, n) {
+            return (parseFloat(n) / 2.54).toFixed(1) + ' in';
+          });
+          v.value = val;
+        }
+      });
+    });
+  }
+}
+
+function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
@@ -164,6 +200,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight) {
   html += '<h2>Tuning</h2>';
 
   var tuning = data.getTuning(cls, dt, weight);
+  convertTuningUnits(tuning, units);
   for (var t = 0; t < tuning.length; t++) {
     var sec = tuning[t];
     html += '<h3>' + escapeHtml(sec.name) + '</h3>';
