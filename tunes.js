@@ -74,12 +74,14 @@ var ENGINE_CATEGORIES = {
   mid: { label: 'Mid (2.2L to 3.8L)', type: 'I5/I6/V6/F4/F6/Rotor', traits: 'Great balance of power and weight. Turbo I6s and V6s are excellent for drift and road racing. Smooth, controllable power delivery.' },
   v8: { label: 'V8 (4.0L to 7.4L)', type: 'V8', traits: 'Strong mid-range torque, excellent for drift and road racing. The workhorse of Forza tuning. Heavier than I6s but more powerful.' },
   big: { label: 'Large (V10/V12, 4.8L+)', type: 'V10/V12', traits: 'Maximum power but heavy and expensive on PI. Best suited for S2 and R class builds, or drag racing where raw power is everything.' },
-  hybrid: { label: 'Hybrid', type: 'Hybrid/Electric', traits: 'Instant electric torque fills gaps in the power band, giving strong acceleration from low RPM. Excellent for road racing corner exits and drag launches. Heavier than non-hybrid equivalents due to battery weight, but the torque fill makes them very driveable.' }
+  hybrid: { label: 'Hybrid', type: 'Hybrid/Electric', traits: 'Instant electric torque fills gaps in the power band, giving strong acceleration from low RPM. Excellent for road racing corner exits and drag launches. Heavier than non-hybrid equivalents due to battery weight, but the torque fill makes them very driveable.' },
+  racing: { label: 'Racing', type: 'Racing Engine', traits: 'Purpose-built racing engines with high-RPM power delivery and lighter internals. Excellent power-to-PI ratio but can be peaky. Best paired with close-ratio gearing to keep them in their narrow power band.' }
 };
 
 function categoriseEngine(name) {
   var lower = name.toLowerCase();
   if (lower.indexOf('hybrid') !== -1) return 'hybrid';
+  if (lower.indexOf('racing') !== -1) return 'racing';
   if (lower.indexOf('v12') !== -1 || lower.indexOf('v10') !== -1) return 'big';
   if (lower.indexOf('v8') !== -1) return 'v8';
   var litres = parseFloat(name);
@@ -90,7 +92,7 @@ function categoriseEngine(name) {
 function recommendEngine(engines, discipline) {
   if (!engines || engines.length === 0) return null;
 
-  var dominated = { drift: ['mid', 'v8'], road: ['mid', 'v8', 'hybrid'], street: ['mid', 'v8', 'hybrid'], offroad: ['mid', 'v8'], 'cross-country': ['mid', 'v8'], drag: ['big', 'v8', 'hybrid'] };
+  var dominated = { drift: ['mid', 'v8', 'racing'], road: ['mid', 'v8', 'hybrid', 'racing'], street: ['mid', 'v8', 'hybrid'], offroad: ['mid', 'v8'], 'cross-country': ['mid', 'v8'], drag: ['big', 'v8', 'hybrid', 'racing'] };
   var preferred = dominated[discipline] || ['mid', 'v8'];
 
   var scored = engines.map(function (eng) {
@@ -114,11 +116,15 @@ function recommendEngine(engines, discipline) {
       if (lower.indexOf('diesel') !== -1) score += 4;
     }
     if (lower.indexOf('rally') !== -1 && (discipline === 'offroad' || discipline === 'cross-country')) score += 5;
-    if (lower.indexOf('racing') !== -1) score += 2;
     if (cat === 'hybrid') {
       if (discipline === 'road' || discipline === 'street') score += 4;
       if (discipline === 'drag') score += 6;
       if (discipline === 'drift') score -= 3;
+    }
+    if (cat === 'racing') {
+      if (discipline === 'road') score += 5;
+      if (discipline === 'drift') score += 3;
+      if (discipline === 'drag') score += 4;
     }
     return { engine: eng, score: score, category: cat };
   });
@@ -156,9 +162,10 @@ var KNOWLEDGE = {
     name: 'Drift',
     overview: 'Drift builds prioritise controlled oversteer, big steering angles, and smooth sustained slides. The goal is a loose rear end with a planted front so you can hold angle through corners. Power delivery matters more than peak horsepower, so you want strong mid-range torque to keep the wheels spinning without snapping the car around.',
 
-    getTuning: function (cls, dt, weight) {
+    getTuning: function (cls, dt, weight, bhp) {
       var sections = [];
       var wm = weightScale(weight);
+      var bhpScale = (bhp || 500) / 500;
 
       if (dt === 'FWD') {
         sections.push({ name: 'Drivetrain Warning', values: [
@@ -170,18 +177,18 @@ var KNOWLEDGE = {
         { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', 'Stock', '245mm', '265mm']) },
         { label: 'Rear Tyre Width', value: 'Max available (315mm or 325mm)' },
         { label: 'Front Pressure', value: '29.0 PSI' },
-        { label: 'Rear Pressure', value: '39.0 to 41.0 PSI' }
-      ], note: 'Wide rear tyres give more smoke and a wider grip window for holding slides. Front can be narrower for steering response. High rear pressure reduces the contact patch to break traction more easily. Low front pressure keeps the front planted at full lock.' });
+        { label: 'Rear Pressure', value: bhpScale > 1.2 ? '41.0 to 43.0 PSI' : '39.0 to 41.0 PSI' }
+      ], note: 'Wide rear tyres give more smoke and a wider grip window for holding slides. Front can be narrower for steering response. High rear pressure reduces the contact patch to break traction more easily. Low front pressure keeps the front planted at full lock.' + (bhpScale > 1.2 ? ' Higher power needs more rear pressure to break traction cleanly without gripping up mid-slide.' : '') });
 
       sections.push({ name: 'Gearing', values: [
-        { label: 'Final Drive', value: scaleValue(cls, 3.80, 3.40).toFixed(2) + ' (adjust to taste)' },
+        { label: 'Final Drive', value: (bhpScale > 1.2 ? scaleValue(cls, 3.50, 3.10) : scaleValue(cls, 3.80, 3.40)).toFixed(2) + ' (adjust to taste)' },
         { label: '1st Gear', value: '3.20 to 3.50' },
         { label: '2nd Gear', value: '2.00 to 2.30' },
         { label: '3rd Gear', value: '1.50 to 1.70' },
         { label: '4th Gear', value: '1.15 to 1.30' },
         { label: '5th Gear', value: '0.95 to 1.05' },
         { label: '6th Gear', value: '0.80 to 0.90' }
-      ], note: 'Keep gears close together so you stay in the power band during transitions. Most drifting happens in 2nd and 3rd gear. Shorten the final drive if you need quicker response, lengthen it for higher speed courses.' });
+      ], note: 'Keep gears close together so you stay in the power band during transitions. Most drifting happens in 2nd and 3rd gear.' + (bhpScale > 1.2 ? ' With high power, a longer final drive prevents the rear from snapping loose too quickly.' : ' Shorten the final drive if you need quicker response, lengthen it for higher speed courses.') });
 
       sections.push({ name: 'Alignment', values: [
         { label: 'Front Camber', value: '-4.5 to -5.0' },
@@ -191,29 +198,38 @@ var KNOWLEDGE = {
         { label: 'Caster', value: 'Max (~7.0)' }
       ], note: 'Aggressive front camber keeps the front tyres planted at full steering lock. Minimal rear camber maximises the rear contact patch for controlled slides. Front toe-out sharpens initial turn-in. Rear toe-in stabilises the rear during transitions. Maximum caster gives strong self-steer effect for maintaining angle.' });
 
+      var frontArb = scaleValue(cls, 28.0, 20.0) * wm;
+      var rearArb = scaleValue(cls, 10.0, 6.0) * wm;
+      if (bhpScale > 1.4) {
+        frontArb = frontArb * 0.85;
+        rearArb = rearArb * 1.15;
+      }
       sections.push({ name: 'Anti-Roll Bars', values: [
-        { label: 'Front', value: (scaleValue(cls, 28.0, 20.0) * wm).toFixed(1) },
-        { label: 'Rear', value: (scaleValue(cls, 10.0, 6.0) * wm).toFixed(1) }
-      ], note: 'A stiff front ARB with a soft rear ARB promotes oversteer and makes it easier to initiate drifts. If the car snaps too aggressively, soften the front slightly. If the rear feels too stable, soften the rear further.' });
+        { label: 'Front', value: frontArb.toFixed(1) },
+        { label: 'Rear', value: rearArb.toFixed(1) }
+      ], note: 'A stiff front ARB with a soft rear ARB promotes oversteer and makes it easier to initiate drifts.' + (bhpScale > 1.4 ? ' With very high power, the ARB split is narrowed slightly to prevent the rear snapping out too violently.' : ' If the car snaps too aggressively, soften the front slightly. If the rear feels too stable, soften the rear further.') });
 
+      var frontSpring = scaleValue(cls, 650, 380) * wm * Math.max(bhpScale, 0.8);
+      var rearSpring = scaleValue(cls, 480, 280) * wm * Math.max(bhpScale, 0.8);
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: (scaleValue(cls, 650, 380) * wm).toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: (scaleValue(cls, 480, 280) * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Front Springs', value: frontSpring.toFixed(0) + ' lbs/in' },
+        { label: 'Rear Springs', value: rearSpring.toFixed(0) + ' lbs/in' },
         { label: 'Front Ride Height', value: scaleValue(cls, 12.5, 14.0).toFixed(1) + ' cm' },
         { label: 'Rear Ride Height', value: scaleValue(cls, 12.0, 13.5).toFixed(1) + ' cm' }
-      ], note: 'Stiffer front springs help weight transfer to the rear during initiation. Softer rear springs keep the back end planted enough for control without killing the slide. Lower ride height improves responsiveness but do not bottom out.' });
+      ], note: 'Stiffer front springs help weight transfer to the rear during initiation. Softer rear springs keep the back end planted enough for control without killing the slide.' + (bhpScale > 1.0 ? ' Springs are stiffened to handle the extra power without the car squatting or wallowing.' : '') });
 
+      var dampScale = Math.max(bhpScale, 0.8);
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: (8.0 * wm).toFixed(1) },
-        { label: 'Rear Rebound', value: (6.5 * wm).toFixed(1) },
-        { label: 'Front Bump', value: (3.0 * wm).toFixed(1) },
-        { label: 'Rear Bump', value: (2.5 * wm).toFixed(1) }
+        { label: 'Front Rebound', value: (8.0 * wm * dampScale).toFixed(1) },
+        { label: 'Rear Rebound', value: (6.5 * wm * dampScale).toFixed(1) },
+        { label: 'Front Bump', value: (3.0 * wm * dampScale).toFixed(1) },
+        { label: 'Rear Bump', value: (2.5 * wm * dampScale).toFixed(1) }
       ], note: 'Higher front rebound resists weight transfer back to the front, keeping the rear light and loose. Lower bump values let the suspension absorb kerbs and bumps without unsettling the car mid-drift.' });
 
       sections.push({ name: 'Aero', values: [
         { label: 'Front Downforce', value: '60% to 70% of range (if fitted)' },
-        { label: 'Rear Downforce', value: '30% to 40% of range (if fitted)' }
-      ], note: 'Less rear downforce than front makes the rear end looser at speed. If you struggle to hold angle at high speed, increase rear downforce slightly. If initiation is difficult, reduce rear further.' });
+        { label: 'Rear Downforce', value: bhpScale > 1.4 ? '40% to 50% of range (if fitted)' : '30% to 40% of range (if fitted)' }
+      ], note: 'Less rear downforce than front makes the rear end looser at speed.' + (bhpScale > 1.4 ? ' With very high power, more rear downforce helps keep the car controllable at speed without losing the ability to slide.' : ' If you struggle to hold angle at high speed, increase rear downforce slightly. If initiation is difficult, reduce rear further.') });
 
       sections.push({ name: 'Brakes', values: [
         { label: 'Brake Pressure', value: '100%' },
@@ -221,18 +237,20 @@ var KNOWLEDGE = {
       ], note: 'Slightly rear-biased braking helps rotate the car into a drift on corner entry. Full brake pressure gives you maximum control over deceleration when setting up entries.' });
 
       if (dt === 'AWD') {
+        var rearAccel = bhpScale > 1.4 ? '90% to 95%' : '100%';
         sections.push({ name: 'Differential', values: [
           { label: 'Front Accel', value: '30% to 40%' },
           { label: 'Front Decel', value: '0% to 5%' },
-          { label: 'Rear Accel', value: '100%' },
+          { label: 'Rear Accel', value: rearAccel },
           { label: 'Rear Decel', value: '10%' },
           { label: 'Centre Balance', value: '75% to 80% Rear' }
-        ], note: 'AWD drift requires most of the power going to the rear. Keep front accel lock low so the front wheels can steer freely. A heavily rear-biased centre balance makes the car behave more like RWD while still having the safety net of front traction.' });
+        ], note: 'AWD drift requires most of the power going to the rear. Keep front accel lock low so the front wheels can steer freely.' + (bhpScale > 1.4 ? ' Slightly lower rear accel lock helps prevent the rear snapping with very high power.' : '') });
       } else {
+        var accelLock = bhpScale > 1.4 ? '85% to 95%' : '100%';
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: '100%' },
+          { label: 'Acceleration', value: accelLock },
           { label: 'Deceleration', value: '10%' }
-        ], note: 'Full acceleration lock ensures both rear wheels spin together for consistent smoke and angle. Low deceleration lock prevents the diff from locking on lift-off, which would snap the car straight mid-drift.' });
+        ], note: (bhpScale > 1.4 ? 'With very high power, reducing accel lock slightly prevents the rear from breaking away too aggressively on throttle. ' : 'Full acceleration lock ensures both rear wheels spin together for consistent smoke and angle. ') + 'Low deceleration lock prevents the diff from locking on lift-off, which would snap the car straight mid-drift.' });
       }
 
       return sections;

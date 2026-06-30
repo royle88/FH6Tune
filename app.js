@@ -57,6 +57,12 @@ function populateCars() {
   }
 }
 
+function toggleBhpInput() {
+  var disc = document.querySelector('input[name="discipline"]:checked');
+  var bhpGroup = document.getElementById('bhp-group');
+  bhpGroup.style.display = (disc && disc.value === 'drift') ? 'block' : 'none';
+}
+
 function toggleEngineInput() {
   var toggle = document.querySelector('input[name="engine-swap-toggle"]:checked');
   var group = document.getElementById('engine-swap-input-group');
@@ -64,6 +70,28 @@ function toggleEngineInput() {
   if (toggle && toggle.value === 'no') {
     document.getElementById('engine-swap-text').value = '';
   }
+}
+
+function matchEngine(input) {
+  var lower = input.toLowerCase();
+  for (var j = 0; j < ENGINE_SWAPS.length; j++) {
+    if (ENGINE_SWAPS[j].toLowerCase() === lower) return ENGINE_SWAPS[j];
+  }
+  var inputWords = lower.replace(/[^a-z0-9.]/g, ' ').split(/\s+/).filter(function (w) { return w; });
+  var bestMatch = null;
+  var bestCount = 0;
+  for (var j = 0; j < ENGINE_SWAPS.length; j++) {
+    var swapLower = ENGINE_SWAPS[j].toLowerCase();
+    var count = 0;
+    for (var k = 0; k < inputWords.length; k++) {
+      if (swapLower.indexOf(inputWords[k]) !== -1) count++;
+    }
+    if (count > bestCount && count >= inputWords.length) {
+      bestCount = count;
+      bestMatch = ENGINE_SWAPS[j];
+    }
+  }
+  return bestMatch;
 }
 
 function getSelectedEngines() {
@@ -74,14 +102,10 @@ function getSelectedEngines() {
   var parts = raw.split(',');
   var matched = [];
   for (var i = 0; i < parts.length; i++) {
-    var input = parts[i].trim().toLowerCase();
+    var input = parts[i].trim();
     if (!input) continue;
-    for (var j = 0; j < ENGINE_SWAPS.length; j++) {
-      if (ENGINE_SWAPS[j].toLowerCase() === input) {
-        matched.push(ENGINE_SWAPS[j]);
-        break;
-      }
-    }
+    var found = matchEngine(input);
+    if (found && matched.indexOf(found) === -1) matched.push(found);
   }
   return matched;
 }
@@ -99,10 +123,16 @@ function generate() {
   if (!carClass) { showError('car-class', 'Please select a class'); valid = false; }
   if (!drivetrainEl) { showFieldError('drivetrain', 'Please select a drivetrain'); valid = false; }
   if (!disciplineEl) { showFieldError('discipline', 'Please select a build purpose'); valid = false; }
+  var bhpVal = document.getElementById('bhp-input').value;
+  if (disciplineEl && disciplineEl.value === 'drift' && !bhpVal) {
+    showError('bhp-input', 'Please select a BHP range for drift');
+    valid = false;
+  }
   if (!valid) return;
 
   var drivetrain = drivetrainEl.value;
   var discipline = disciplineEl.value;
+  var bhp = parseInt(bhpVal, 10) || 0;
   var unitsEl = document.querySelector('input[name="units"]:checked');
   var units = unitsEl ? unitsEl.value : 'imperial';
   var engineSwaps = getSelectedEngines();
@@ -121,15 +151,16 @@ function generate() {
   var weightDisplay = units === 'imperial'
     ? Math.round(carWeight * 2.2046) + ' lbs'
     : carWeight + ' kg';
-  document.getElementById('output-subtitle').textContent =
-    carClass + ' | ' + drivetrain + ' | ' + data.name + ' | ' + weightDisplay;
+  var subtitleParts = [carClass, drivetrain, data.name, weightDisplay];
+  if (discipline === 'drift' && bhp > 0) subtitleParts.push(bhp + ' BHP');
+  document.getElementById('output-subtitle').textContent = subtitleParts.join(' | ');
 
   document.getElementById('input-section').style.display = 'none';
   document.getElementById('loading-section').style.display = 'block';
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight, units);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight, units, bhp);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -168,7 +199,7 @@ function convertTuningUnits(sections, units) {
   }
 }
 
-function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units) {
+function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
@@ -199,7 +230,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units) {
   // Tuning
   html += '<h2>Tuning</h2>';
 
-  var tuning = data.getTuning(cls, dt, weight);
+  var tuning = data.getTuning(cls, dt, weight, bhp);
   convertTuningUnits(tuning, units);
   for (var t = 0; t < tuning.length; t++) {
     var sec = tuning[t];
@@ -264,6 +295,8 @@ function resetForm() {
   document.getElementById('car-model').disabled = true;
   document.getElementById('car-name').innerHTML = '<option value="">Select car</option>';
   document.getElementById('car-name').disabled = true;
+  document.getElementById('bhp-input').value = '';
+  document.getElementById('bhp-group').style.display = 'none';
   var noRadio = document.querySelector('input[name="engine-swap-toggle"][value="no"]');
   if (noRadio) noRadio.checked = true;
   var engineText = document.getElementById('engine-swap-text');

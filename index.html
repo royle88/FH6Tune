@@ -68,13 +68,29 @@
     <div class="form-group">
       <label>Build Purpose</label>
       <div class="option-group">
-        <label class="option-label"><input type="radio" name="discipline" value="drift"> Drift</label>
-        <label class="option-label"><input type="radio" name="discipline" value="road"> Road Racing</label>
-        <label class="option-label"><input type="radio" name="discipline" value="street"> Street Racing</label>
-        <label class="option-label"><input type="radio" name="discipline" value="offroad"> Off-Road</label>
-        <label class="option-label"><input type="radio" name="discipline" value="cross-country"> Cross Country</label>
-        <label class="option-label"><input type="radio" name="discipline" value="drag"> Drag</label>
+        <label class="option-label"><input type="radio" name="discipline" value="drift" onchange="toggleBhpInput()"> Drift</label>
+        <label class="option-label"><input type="radio" name="discipline" value="road" onchange="toggleBhpInput()"> Road Racing</label>
+        <label class="option-label"><input type="radio" name="discipline" value="street" onchange="toggleBhpInput()"> Street Racing</label>
+        <label class="option-label"><input type="radio" name="discipline" value="offroad" onchange="toggleBhpInput()"> Off-Road</label>
+        <label class="option-label"><input type="radio" name="discipline" value="cross-country" onchange="toggleBhpInput()"> Cross Country</label>
+        <label class="option-label"><input type="radio" name="discipline" value="drag" onchange="toggleBhpInput()"> Drag</label>
       </div>
+    </div>
+
+    <div class="form-group" id="bhp-group" style="display:none;">
+      <label for="bhp-input">Target BHP</label>
+      <select id="bhp-input">
+        <option value="">Select BHP range</option>
+        <option value="300">Under 300</option>
+        <option value="400">300 to 400</option>
+        <option value="500">400 to 500</option>
+        <option value="600">500 to 600</option>
+        <option value="700">600 to 700</option>
+        <option value="800">700 to 800</option>
+        <option value="900">800 to 900</option>
+        <option value="1000">900+</option>
+      </select>
+      <div class="engine-swap-hint">How much power you are aiming for after upgrades. This affects spring stiffness and differential settings.</div>
     </div>
 
     <div class="form-group">
@@ -133,8 +149,8 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="cars.js?v=2"></script>
-<script src="tunes.js?v=2"></script>
-<script src="app.js?v=2"></script>
+<script src="cars.js?v=3"></script>
+<script src="tunes.js?v=3"></script>
+<script src="app.js?v=3"></script>
 </body>
 </html>
