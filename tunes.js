@@ -156,6 +156,25 @@ function weightScale(weight) {
   return (weight || REFERENCE_WEIGHT) / REFERENCE_WEIGHT;
 }
 
+function springRate(hz, axleLbs) {
+  return (hz * hz * axleLbs) / 19.56;
+}
+
+function calcSprings(weight, frontDist, hz) {
+  var totalLbs = weight * 2.2046;
+  var frontLbs = totalLbs * frontDist;
+  var rearLbs = totalLbs * (1 - frontDist);
+  return {
+    front: Math.round(springRate(hz, frontLbs)),
+    rear: Math.round(springRate(hz, rearLbs))
+  };
+}
+
+function calcFinalDrive(hp) {
+  var p = hp > 800 ? hp / 2 : hp;
+  return 4.25 + ((400 - p) / 6) * 0.01;
+}
+
 var KNOWLEDGE = {
 
   drift: {
@@ -174,21 +193,25 @@ var KNOWLEDGE = {
       }
 
       sections.push({ name: 'Tyres', values: [
-        { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', 'Stock', '245mm', '265mm']) },
-        { label: 'Rear Tyre Width', value: 'Max available (315mm or 325mm)' },
-        { label: 'Front Pressure', value: '29.0 PSI' },
-        { label: 'Rear Pressure', value: bhpScale > 1.2 ? '41.0 to 43.0 PSI' : '39.0 to 41.0 PSI' }
-      ], note: 'Wide rear tyres give more smoke and a wider grip window for holding slides. Front can be narrower for steering response. High rear pressure reduces the contact patch to break traction more easily. Low front pressure keeps the front planted at full lock.' + (bhpScale > 1.2 ? ' Higher power needs more rear pressure to break traction cleanly without gripping up mid-slide.' : '') });
+        { label: 'Compound', value: 'Drift or Snow (snow gives easier slides, less PI)' },
+        { label: 'Front Tyre Width', value: 'Narrowest available' },
+        { label: 'Rear Tyre Width', value: 'Widest available (315mm or 325mm)' },
+        { label: 'Front Pressure', value: '31.0 PSI' },
+        { label: 'Rear Pressure', value: '30.0 to 33.0 PSI' }
+      ], note: 'Meta drift pressures sit around 30 to 33 PSI rear on drift compound. This lets the rear break traction predictably without sudden grip spikes. Narrow front tyres improve steering response at full lock. Snow compound is a viable alternative that costs less PI and slides more easily.' });
 
+      var driftFd = 3.60;
+      if (bhp > 0) {
+        driftFd = calcFinalDrive(bhp) - 0.3;
+        if (driftFd < 2.80) driftFd = 2.80;
+        if (driftFd > 3.80) driftFd = 3.80;
+      }
       sections.push({ name: 'Gearing', values: [
-        { label: 'Final Drive', value: (bhpScale > 1.2 ? scaleValue(cls, 3.50, 3.10) : scaleValue(cls, 3.80, 3.40)).toFixed(2) + ' (adjust to taste)' },
-        { label: '1st Gear', value: '3.20 to 3.50' },
-        { label: '2nd Gear', value: '2.00 to 2.30' },
-        { label: '3rd Gear', value: '1.50 to 1.70' },
-        { label: '4th Gear', value: '1.15 to 1.30' },
-        { label: '5th Gear', value: '0.95 to 1.05' },
-        { label: '6th Gear', value: '0.80 to 0.90' }
-      ], note: 'Keep gears close together so you stay in the power band during transitions. Most drifting happens in 2nd and 3rd gear.' + (bhpScale > 1.2 ? ' With high power, a longer final drive prevents the rear from snapping loose too quickly.' : ' Shorten the final drive if you need quicker response, lengthen it for higher speed courses.') });
+        { label: 'Final Drive', value: driftFd.toFixed(2) + ' (adjust to taste)' },
+        { label: 'Primary Drift Gear', value: '4th (medium corners)' },
+        { label: 'Tight Corners', value: '3rd' },
+        { label: 'Fast Sweepers', value: '5th' }
+      ], note: 'Set the final drive so you can hover at the redline in 4th gear during a typical drift without bouncing off the limiter. Close-ratio gears keep you in the power band during transitions. Most competitive drifting in FH6 happens in 3rd to 5th gear.' });
 
       sections.push({ name: 'Alignment', values: [
         { label: 'Front Camber', value: '-4.5 to -5.0' },
@@ -209,14 +232,17 @@ var KNOWLEDGE = {
         { label: 'Rear', value: rearArb.toFixed(1) }
       ], note: 'A stiff front ARB with a soft rear ARB promotes oversteer and makes it easier to initiate drifts.' + (bhpScale > 1.4 ? ' With very high power, the ARB split is narrowed slightly to prevent the rear snapping out too violently.' : ' If the car snaps too aggressively, soften the front slightly. If the rear feels too stable, soften the rear further.') });
 
-      var frontSpring = scaleValue(cls, 650, 380) * wm * Math.max(bhpScale, 0.8);
-      var rearSpring = scaleValue(cls, 480, 280) * wm * Math.max(bhpScale, 0.8);
+      var driftHz = 2.1 + (bhpScale - 1.0) * 0.15;
+      if (driftHz < 2.0) driftHz = 2.0;
+      if (driftHz > 2.4) driftHz = 2.4;
+      var driftSprings = calcSprings(weight, 0.54, driftHz);
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: frontSpring.toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: rearSpring.toFixed(0) + ' lbs/in' },
-        { label: 'Front Ride Height', value: scaleValue(cls, 12.5, 14.0).toFixed(1) + ' cm' },
-        { label: 'Rear Ride Height', value: scaleValue(cls, 12.0, 13.5).toFixed(1) + ' cm' }
-      ], note: 'Stiffer front springs help weight transfer to the rear during initiation. Softer rear springs keep the back end planted enough for control without killing the slide.' + (bhpScale > 1.0 ? ' Springs are stiffened to handle the extra power without the car squatting or wallowing.' : '') });
+        { label: 'Front Springs', value: driftSprings.front + ' lbs/in' },
+        { label: 'Rear Springs', value: driftSprings.rear + ' lbs/in' },
+        { label: 'Ride Frequency', value: driftHz.toFixed(2) + ' Hz' },
+        { label: 'Front Ride Height', value: 'Minimum' },
+        { label: 'Rear Ride Height', value: 'Minimum' }
+      ], note: 'Drift tunes use a ride frequency of 2.1 to 2.2 Hz for body roll and weight transfer. Higher BHP pushes this towards 2.3 to 2.4 Hz for stability. Springs are calculated from the formula: K = (Hz squared x axle weight) / 19.56. Minimum ride height improves responsiveness.' });
 
       var dampScale = Math.max(bhpScale, 0.8);
       sections.push({ name: 'Damping', values: [
@@ -246,11 +272,12 @@ var KNOWLEDGE = {
           { label: 'Centre Balance', value: '75% to 80% Rear' }
         ], note: 'AWD drift requires most of the power going to the rear. Keep front accel lock low so the front wheels can steer freely.' + (bhpScale > 1.4 ? ' Slightly lower rear accel lock helps prevent the rear snapping with very high power.' : '') });
       } else {
-        var accelLock = bhpScale > 1.4 ? '85% to 95%' : '100%';
+        var driftAccel = bhpScale > 1.4 ? '65% to 80%' : bhpScale > 1.0 ? '80% to 90%' : '85% to 100%';
+        var driftDecel = bhpScale > 1.4 ? '25% to 40%' : '15% to 25%';
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: accelLock },
-          { label: 'Deceleration', value: '10%' }
-        ], note: (bhpScale > 1.4 ? 'With very high power, reducing accel lock slightly prevents the rear from breaking away too aggressively on throttle. ' : 'Full acceleration lock ensures both rear wheels spin together for consistent smoke and angle. ') + 'Low deceleration lock prevents the diff from locking on lift-off, which would snap the car straight mid-drift.' });
+          { label: 'Acceleration', value: driftAccel },
+          { label: 'Deceleration', value: driftDecel }
+        ], note: 'Meta drift diff runs 65 to 90% accel lock. Below 70% gives inconsistent lines; near 100% makes the car twitchy. Higher decel (15 to 40%) lets the car rotate freely on corner entry. With high power, lower both values to keep the car controllable.' });
       }
 
       return sections;
@@ -272,7 +299,7 @@ var KNOWLEDGE = {
       'Turn off Stability Control and Traction Control. Use Manual gears for full throttle and gear control during drifts.'
     ],
 
-    engineSwapAdvice: 'For drift, pick an engine with strong mid-range torque rather than peak horsepower. Inline 6 turbos and V8s are excellent choices as they deliver smooth, controllable power. Avoid high-revving engines (V10s, V12s) unless you are comfortable managing sudden power delivery. If you are on a tight PI budget, a turbo inline 6 is usually the best balance of power and cost.'
+    engineSwapAdvice: 'The power sweet spot for drift is 600 to 750 BHP. Avoid exceeding 800 BHP unless you are very experienced, as it makes the car twitchy and hard to control. Pick an engine with strong mid-range torque rather than peak horsepower. Inline 6 turbos and V8s deliver smooth, controllable power. Aim for roughly equal torque and horsepower figures for the most controllable power delivery.'
   },
 
   road: {
@@ -283,17 +310,19 @@ var KNOWLEDGE = {
       var sections = [];
       var wm = weightScale(weight);
 
+      var frontPsi = dt === 'RWD' ? '32.0' : dt === 'FWD' ? '33.0' : '31.5';
+      var rearPsi = dt === 'RWD' ? '31.5' : dt === 'FWD' ? '31.5' : '31.5';
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Tyre Width', value: upgradeLevel(cls, ['Stock', '245mm', '255mm', '275mm']) },
         { label: 'Rear Tyre Width', value: upgradeLevel(cls, ['Stock', '265mm', '285mm', '305mm']) },
-        { label: 'Front Pressure', value: scaleValue(cls, 31.0, 29.0).toFixed(1) + ' PSI' },
-        { label: 'Rear Pressure', value: scaleValue(cls, 31.0, 29.0).toFixed(1) + ' PSI' }
-      ], note: 'Wider tyres give more grip but cost more PI. For tight budgets, prioritise rear width for traction. Equal pressures front and rear give balanced grip. Higher classes benefit from slightly higher pressures for sharper response.' });
+        { label: 'Front Pressure', value: frontPsi + ' PSI (semi-slick)' },
+        { label: 'Rear Pressure', value: rearPsi + ' PSI (semi-slick)' }
+      ], note: 'Meta pressures vary by compound: sport 31.5, semi-slick 32.0, slick 32.5 PSI. RWD adds +0.75 PSI to the front for sharper turn-in. FWD adds +1.5 PSI front. Widening front tyres is one of the most PI-efficient grip upgrades in FH6.' });
 
       sections.push({ name: 'Gearing', values: [
-        { label: 'Final Drive', value: 'Adjust to suit circuit' },
+        { label: 'Final Drive', value: 'Adjust to suit circuit (see note)' },
         { label: 'Strategy', value: 'Top of last gear should reach the longest straight\'s top speed' }
-      ], note: 'Set your final drive so that you hit the rev limiter at the end of the longest straight on the circuit you are racing. Shorter gearing gives better acceleration but limits top speed. For a general-purpose setup, aim for the middle ground.' });
+      ], note: 'For a starting point, use the formula: FD = 4.25 + ((400 - HP) / 6) x 0.01. For engines above 800 HP, halve the HP first. Then adjust so you hit the rev limiter at the end of the longest straight. Shorter gearing gives better acceleration but limits top speed.' });
 
       sections.push({ name: 'Alignment', values: [
         { label: 'Front Camber', value: '-' + scaleValue(cls, 2.0, 1.0).toFixed(1) },
@@ -303,24 +332,29 @@ var KNOWLEDGE = {
         { label: 'Caster', value: (weight > 1600 ? '6.5 to 7.0' : weight > 1200 ? '5.5 to 6.5' : '5.0 to 5.5') }
       ], note: 'Moderate camber compensates for body roll in fast corners to keep the full tyre surface on the road. Too much camber hurts straight-line braking grip. Caster scales with weight: heavier cars benefit from more caster for stability, lighter cars need less to avoid snappy turn-in.' });
 
-      var frontArb = scaleValue(cls, 24.0, 15.0) * wm;
-      var rearArb = dt === 'FWD' ? frontArb + 4 : frontArb - 3;
+      var arbBase = { front: 0, rear: 0 };
+      if (dt === 'FWD') { arbBase = { front: 12 * wm, rear: 32 * wm }; }
+      else if (dt === 'AWD') { arbBase = { front: 26 * wm, rear: 33 * wm }; }
+      else { arbBase = { front: 22 * wm, rear: 30 * wm }; }
+      var arbNote = dt === 'FWD'
+        ? 'FWD meta uses a very soft front and stiff rear. This fights the natural understeer by promoting rear-end rotation. Adjust the mechanical balance readout towards 0.60.'
+        : 'The meta ARB split has the rear stiffer than the front to promote rotation. Use the mechanical balance readout in the tuning menu and aim for 0.55 to 0.65, with 0.60 as the sweet spot.';
       sections.push({ name: 'Anti-Roll Bars', values: [
-        { label: 'Front', value: frontArb.toFixed(1) },
-        { label: 'Rear', value: rearArb.toFixed(1) }
-      ], note: dt === 'FWD'
-        ? 'FWD road cars benefit from a stiffer rear ARB relative to the front. This reduces understeer by promoting rear-end rotation through corners.'
-        : 'Slightly stiffer front than rear gives a safe, mildly understeering balance. If you want a more neutral car, bring the rear closer to the front value. If the rear steps out too much on corner exit, increase the front further.'
-      });
+        { label: 'Front', value: arbBase.front.toFixed(1) },
+        { label: 'Rear', value: arbBase.rear.toFixed(1) },
+        { label: 'Mech. Balance Target', value: '0.55 to 0.65 (aim 0.60)' }
+      ], note: arbNote });
 
-      var frontSpring = scaleValue(cls, 700, 300) * wm;
-      var rearSpring = dt === 'FWD' ? frontSpring - 80 : frontSpring - 50;
+      var rideHz = scaleValue(cls, 2.55, 2.30);
+      var frontDist = dt === 'FWD' ? 0.58 : 0.52;
+      var springs = calcSprings(weight, frontDist, rideHz);
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: frontSpring.toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: rearSpring.toFixed(0) + ' lbs/in' },
-        { label: 'Front Ride Height', value: scaleValue(cls, 11.0, 13.5).toFixed(1) + ' cm' },
-        { label: 'Rear Ride Height', value: scaleValue(cls, 11.5, 14.0).toFixed(1) + ' cm' }
-      ], note: 'Stiffer springs reduce body roll and improve responsiveness. Lower ride height lowers the centre of gravity for better cornering. Keep the rear slightly higher than the front to promote rear-end grip and stability under braking.' });
+        { label: 'Front Springs', value: springs.front + ' lbs/in' },
+        { label: 'Rear Springs', value: springs.rear + ' lbs/in' },
+        { label: 'Ride Frequency', value: rideHz.toFixed(2) + ' Hz' },
+        { label: 'Front Ride Height', value: 'Minimum' },
+        { label: 'Rear Ride Height', value: 'Minimum' }
+      ], note: 'Springs are calculated using the ride frequency formula: K = (Hz squared x axle weight) / 19.56. Circuit tunes target 2.5 Hz for sharp response. Minimum ride height lowers the centre of gravity. Every millimetre of ride height is centre-of-gravity height on smooth tarmac.' });
 
       var frontRebound = scaleValue(cls, 8.5, 5.5) * wm;
       var rearRebound = frontRebound - 0.3;
@@ -332,9 +366,10 @@ var KNOWLEDGE = {
       ], note: 'Bump should be roughly 60% of rebound. Higher rebound keeps the car stable during weight transfer. If the car feels harsh over bumps, reduce bump values slightly.' });
 
       sections.push({ name: 'Aero', values: [
-        { label: 'Front Downforce', value: '50% to 60% of range (if fitted)' },
-        { label: 'Rear Downforce', value: '55% to 65% of range (if fitted)' }
-      ], note: 'More rear downforce than front gives a stable, understeering balance at high speed. If the car feels too heavy and understeery in fast corners, reduce rear or increase front. If the rear is unstable at speed, increase rear downforce.' });
+        { label: 'Front Downforce', value: '40% of total aero (if fitted)' },
+        { label: 'Rear Downforce', value: '60% of total aero (if fitted)' },
+        { label: 'Aero Balance Target', value: '0.40 to 0.45' }
+      ], note: 'The meta aero balance is 0.40 to 0.45, meaning roughly 40% front and 60% rear downforce. This gives a stable, rear-planted car at speed. Check the aero balance readout in the tuning menu and adjust sliders to hit this target. Maximum downforce at both ends is generally fastest for circuits.' });
 
       var brakeBalance = dt === 'FWD' ? '55% to 60%' : dt === 'AWD' ? '52% to 56%' : '50% to 55%';
       sections.push({ name: 'Brakes', values: [
@@ -344,12 +379,12 @@ var KNOWLEDGE = {
 
       if (dt === 'AWD') {
         sections.push({ name: 'Differential', values: [
-          { label: 'Front Accel', value: '25% to 35%' },
-          { label: 'Front Decel', value: '5% to 10%' },
-          { label: 'Rear Accel', value: scaleValue(cls, 70, 50).toFixed(0) + '%' },
-          { label: 'Rear Decel', value: '15% to 20%' },
-          { label: 'Centre Balance', value: '60% to 70% Rear' }
-        ], note: 'Rear-biased centre balance gives a more natural, RWD-like feel while maintaining AWD stability. Low front accel lock prevents understeer on corner exit. Moderate rear accel lock controls wheelspin without losing traction.' });
+          { label: 'Front Accel', value: '28%' },
+          { label: 'Front Decel', value: '0%' },
+          { label: 'Rear Accel', value: '100%' },
+          { label: 'Rear Decel', value: '45%' },
+          { label: 'Centre Balance', value: '70% to 85% Rear' }
+        ], note: 'Meta AWD diff uses maximum rear accel lock with very low front accel to minimise understeer. Zero front decel lets the front wheels steer freely on turn-in. High rear decel stabilises the car under trail braking. A heavily rear-biased centre makes the car feel RWD-like with AWD traction.' });
       } else if (dt === 'FWD') {
         sections.push({ name: 'Differential', values: [
           { label: 'Acceleration', value: '40% to 50%' },
@@ -463,11 +498,14 @@ var KNOWLEDGE = {
         { label: 'Rear', value: (10.0 * wm).toFixed(1) + ' to ' + (15.0 * wm).toFixed(1) }
       ], note: 'Soft, balanced ARBs let each wheel move independently over rough terrain. This keeps all four tyres in contact with the ground as much as possible.' });
 
+      var rallyHz = 2.0;
+      var rallySprings = calcSprings(weight, 0.52, rallyHz);
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: (200 * wm).toFixed(0) + ' to ' + (350 * wm).toFixed(0) + ' lbs/in' },
-        { label: 'Rear Springs', value: (200 * wm).toFixed(0) + ' to ' + (350 * wm).toFixed(0) + ' lbs/in' },
+        { label: 'Front Springs', value: rallySprings.front + ' lbs/in' },
+        { label: 'Rear Springs', value: rallySprings.rear + ' lbs/in' },
+        { label: 'Ride Frequency', value: rallyHz.toFixed(2) + ' Hz' },
         { label: 'Ride Height', value: 'Maximum' }
-      ], note: 'Soft springs absorb bumps and jumps. Maximum ride height clears obstacles and prevents bottoming out.' });
+      ], note: 'Rally and off-road use a ride frequency of 2.0 Hz for soft, compliant suspension that absorbs bumps and jumps. Springs are calculated from the formula: K = (Hz squared x axle weight) / 19.56. Maximum ride height clears obstacles and prevents bottoming out.' });
 
       sections.push({ name: 'Damping', values: [
         { label: 'Front Rebound', value: (6.0 * wm).toFixed(1) + ' to ' + (7.0 * wm).toFixed(1) },
@@ -518,12 +556,15 @@ var KNOWLEDGE = {
       var wm = weightScale(weight);
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
+          var ccHz = 2.15;
+          var ccSprings = calcSprings(weight, 0.52, ccHz);
           sec.values = [
-            { label: 'Front Springs', value: (250 * wm).toFixed(0) + ' to ' + (400 * wm).toFixed(0) + ' lbs/in' },
-            { label: 'Rear Springs', value: (250 * wm).toFixed(0) + ' to ' + (400 * wm).toFixed(0) + ' lbs/in' },
+            { label: 'Front Springs', value: ccSprings.front + ' lbs/in' },
+            { label: 'Rear Springs', value: ccSprings.rear + ' lbs/in' },
+            { label: 'Ride Frequency', value: ccHz.toFixed(2) + ' Hz' },
             { label: 'Ride Height', value: 'Maximum or near maximum' }
           ];
-          sec.note = 'Slightly stiffer springs than pure off-road help with the faster tarmac sections. Still soft enough to handle rough terrain.';
+          sec.note = 'Cross country uses 2.15 Hz ride frequency, slightly stiffer than pure off-road for the faster tarmac sections. Still soft enough for rough terrain.';
         }
         if (sec.name === 'Anti-Roll Bars') {
           sec.values = [
@@ -592,12 +633,16 @@ var KNOWLEDGE = {
         { label: 'Rear', value: 'Minimum' }
       ], note: 'Minimum ARBs allow maximum weight transfer to the rear on launch.' });
 
+      var dragHz = 2.65;
+      var dragSprings = calcSprings(weight || 1400, 0.50, dragHz);
+      var softFront = Math.round(dragSprings.front * 0.5);
       sections.push({ name: 'Springs', values: [
-        { label: 'Front Springs', value: 'Soft' },
-        { label: 'Rear Springs', value: 'Stiff' },
+        { label: 'Front Springs', value: softFront + ' lbs/in (soft)' },
+        { label: 'Rear Springs', value: dragSprings.rear + ' lbs/in (stiff)' },
+        { label: 'Ride Frequency', value: dragHz.toFixed(2) + ' Hz (rear)' },
         { label: 'Front Ride Height', value: 'Maximum' },
         { label: 'Rear Ride Height', value: 'Minimum' }
-      ], note: 'Soft front lets weight shift rearward on launch. Stiff rear supports the extra load. A raked stance promotes weight transfer.' });
+      ], note: 'Drag tunes use a high ride frequency (2.6 to 2.7 Hz) for the rear to support weight transfer on launch. The front is halved to let weight shift rearward. A raked stance (front high, rear low) promotes weight transfer off the line.' });
 
       sections.push({ name: 'Differential', values: [
         { label: 'Acceleration', value: '100%' },
