@@ -88,7 +88,7 @@ var CAR_DATABASE = {
     "RS e-tron GT": [{ name: "2021 Audi RS e-tron GT", weight: 2347 }],
     "S1": [{ name: "2015 Audi S1", weight: 1315 }],
     "Sport quattro": [
-      { name: "1984 Audi Sport quattro", weight: 1300 },
+      { name: "1983 Audi Sport quattro", weight: 1300 },
       { name: "1986 Audi #2 Audi Sport quattro S1", weight: 1090 },
     ],
     "TT": [{ name: "2010 Audi TT RS Coupe", weight: 1450 }],
@@ -453,6 +453,7 @@ var CAR_DATABASE = {
   "Honda": {
     "Acty": [
       { name: "1994 Honda Acty", weight: 680 },
+      { name: "1994 Honda Acty Rakuraku Express", weight: 680 },
     ],
     "Beat": [
       { name: "1991 Honda Beat", weight: 760 },
@@ -733,6 +734,7 @@ var CAR_DATABASE = {
       { name: "2010 Mazda Mazdaspeed 3", weight: 1474 },
     ],
     "MX-5": [
+      { name: "1990 Mazda MX-5 Miata", weight: 1002 },
       { name: "1994 Mazda MX-5 Miata", weight: 990 },
       { name: "1994 Mazda MX-5 Miata Forza Edition", weight: 990 },
       { name: "2005 Mazda Mazdaspeed MX-5", weight: 1113 },
@@ -962,6 +964,7 @@ var CAR_DATABASE = {
       { name: "1987 Nissan Skyline GTS-R", weight: 1320 },
       { name: "1990 Nissan #12 Skyline GT-R (BNR32 Gr.A) JTC", weight: 1260 },
       { name: "1992 Nissan Skyline GT-R", weight: 1430 },
+      { name: "1993 Nissan Skyline GT-R V-Spec", weight: 1500 },
       { name: "1993 Nissan #32 Skyline WTAC", weight: 1300 },
       { name: "1997 Nissan Skyline GT-R V-Spec", weight: 1530 },
       { name: "1998 Nissan #23 Skyline GT-R Pennzoil NISMO", weight: 1250 },
