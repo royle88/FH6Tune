@@ -160,7 +160,7 @@ var KNOWLEDGE = {
 
   drift: {
     name: 'Drift',
-    overview: 'Drift builds prioritise controlled oversteer, big steering angles, and smooth sustained slides. The goal is a loose rear end with a planted front so you can hold angle through corners. Power delivery matters more than peak horsepower, so you want strong mid-range torque to keep the wheels spinning without snapping the car around.',
+    overview: 'Drift builds prioritise controlled oversteer, big steering angles, and smooth sustained slides. FH6 has a wider drift control range than previous titles, making it easier to hold angle and transition between corners. Power delivery matters more than peak horsepower, so you want strong mid-range torque to keep the wheels spinning without snapping the car around.',
 
     getTuning: function (cls, dt, weight, bhp) {
       var sections = [];
@@ -233,8 +233,8 @@ var KNOWLEDGE = {
 
       sections.push({ name: 'Brakes', values: [
         { label: 'Brake Pressure', value: '100%' },
-        { label: 'Brake Balance', value: '48% to 50%' }
-      ], note: 'Slightly rear-biased braking helps rotate the car into a drift on corner entry. Full brake pressure gives you maximum control over deceleration when setting up entries.' });
+        { label: 'Brake Balance', value: '45% to 50%' }
+      ], note: 'Rear-biased braking helps rotate the car into a drift on corner entry. In FH6, going as low as 45% gives stronger rear lock-up for initiating slides. Full brake pressure gives maximum control over deceleration.' });
 
       if (dt === 'AWD') {
         var rearAccel = bhpScale > 1.4 ? '90% to 95%' : '100%';
@@ -257,15 +257,19 @@ var KNOWLEDGE = {
     },
 
     tips: [
+      'In FH6, most drifting happens in 3rd and 4th gear. Set your gearing so you can hold angle in 4th on medium corners and drop to 3rd for tight hairpins.',
       'If the car snaps into oversteer too violently, soften the front ARB by 2 to 3 points and add 1 to 2 points of rear ARB.',
       'If the rear feels too stable and you cannot initiate, increase rear tyre pressure by 1 to 2 PSI and reduce rear ARB.',
       'If you lose angle mid-drift, try increasing front camber (more negative) and raising caster.',
       'If the car understeers on entry before the drift, increase front toe-out by 0.1 and soften the front springs slightly.',
-      'If transitions feel sluggish, tighten the gearing (shorter ratios in 2nd and 3rd) and ensure your final drive lets you stay in the power band.',
+      'If transitions feel sluggish, tighten the gearing (shorter ratios in 3rd and 4th) and ensure your final drive lets you stay in the power band.',
       'For high speed courses, lengthen the final drive and increase rear downforce for stability.',
       'For technical courses with tight corners, shorten the final drive and reduce rear downforce for quicker rotation.',
+      'FH6 has a wider drift control range than previous titles, so do not over-tune. Start with moderate settings and only go extreme if the car feels too stable.',
+      'Snow tyres can work for drift builds if you want even less grip for easier slides. They cost less PI than drift tyres.',
       'Heavier cars generally need stiffer springs and more aggressive ARB splits to rotate properly.',
-      'Lighter cars may need softer settings overall to avoid becoming too twitchy and unpredictable.'
+      'Lighter cars may need softer settings overall to avoid becoming too twitchy and unpredictable.',
+      'Turn off Stability Control and Traction Control. Use Manual gears for full throttle and gear control during drifts.'
     ],
 
     engineSwapAdvice: 'For drift, pick an engine with strong mid-range torque rather than peak horsepower. Inline 6 turbos and V8s are excellent choices as they deliver smooth, controllable power. Avoid high-revving engines (V10s, V12s) unless you are comfortable managing sudden power delivery. If you are on a tight PI budget, a turbo inline 6 is usually the best balance of power and cost.'
@@ -273,7 +277,7 @@ var KNOWLEDGE = {
 
   road: {
     name: 'Road Racing',
-    overview: 'Road racing builds are all about consistent lap times on tarmac circuits. You want maximum grip, sharp turn-in, stable braking, and strong corner exit traction. The car should be predictable and confidence-inspiring, with a slight tendency towards understeer for safety. Aero is crucial at higher classes for maintaining grip through fast corners.',
+    overview: 'Road racing builds are all about consistent lap times on tarmac circuits. You want maximum grip, sharp turn-in, stable braking, and strong corner exit traction. FH6 has more linear steering response and more forgiving braking than previous titles, so builds can be pushed closer to neutral balance. Aero is crucial at higher classes for maintaining grip through fast corners.',
 
     getTuning: function (cls, dt, weight) {
       var sections = [];
@@ -296,8 +300,8 @@ var KNOWLEDGE = {
         { label: 'Rear Camber', value: '-' + scaleValue(cls, 1.5, 0.5).toFixed(1) },
         { label: 'Front Toe', value: '0.0 to 0.1 out' },
         { label: 'Rear Toe', value: '0.0 to 0.1 in' },
-        { label: 'Caster', value: scaleValue(cls, 5.5, 4.5).toFixed(1) }
-      ], note: 'Moderate camber compensates for body roll in fast corners to keep the full tyre surface on the road. Too much camber hurts straight-line braking grip. Neutral toe is fastest in a straight line; tiny toe-out on the front improves turn-in slightly.' });
+        { label: 'Caster', value: (weight > 1600 ? '6.5 to 7.0' : weight > 1200 ? '5.5 to 6.5' : '5.0 to 5.5') }
+      ], note: 'Moderate camber compensates for body roll in fast corners to keep the full tyre surface on the road. Too much camber hurts straight-line braking grip. Caster scales with weight: heavier cars benefit from more caster for stability, lighter cars need less to avoid snappy turn-in.' });
 
       var frontArb = scaleValue(cls, 24.0, 15.0) * wm;
       var rearArb = dt === 'FWD' ? frontArb + 4 : frontArb - 3;
@@ -318,22 +322,25 @@ var KNOWLEDGE = {
         { label: 'Rear Ride Height', value: scaleValue(cls, 11.5, 14.0).toFixed(1) + ' cm' }
       ], note: 'Stiffer springs reduce body roll and improve responsiveness. Lower ride height lowers the centre of gravity for better cornering. Keep the rear slightly higher than the front to promote rear-end grip and stability under braking.' });
 
+      var frontRebound = scaleValue(cls, 8.5, 5.5) * wm;
+      var rearRebound = frontRebound - 0.3;
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: (scaleValue(cls, 7.5, 5.0) * wm).toFixed(1) },
-        { label: 'Rear Rebound', value: (scaleValue(cls, 7.0, 4.5) * wm).toFixed(1) },
-        { label: 'Front Bump', value: (scaleValue(cls, 4.5, 3.0) * wm).toFixed(1) },
-        { label: 'Rear Bump', value: (scaleValue(cls, 4.0, 2.5) * wm).toFixed(1) }
-      ], note: 'Rebound controls how quickly the suspension extends after compression. Higher rebound keeps the car stable during weight transfer. Bump controls how the suspension absorbs impacts. Keep bump lower than rebound as a general rule.' });
+        { label: 'Front Rebound', value: frontRebound.toFixed(1) },
+        { label: 'Rear Rebound', value: rearRebound.toFixed(1) },
+        { label: 'Front Bump', value: (frontRebound * 0.6).toFixed(1) },
+        { label: 'Rear Bump', value: (rearRebound * 0.6).toFixed(1) }
+      ], note: 'Bump should be roughly 60% of rebound. Higher rebound keeps the car stable during weight transfer. If the car feels harsh over bumps, reduce bump values slightly.' });
 
       sections.push({ name: 'Aero', values: [
         { label: 'Front Downforce', value: '50% to 60% of range (if fitted)' },
         { label: 'Rear Downforce', value: '55% to 65% of range (if fitted)' }
       ], note: 'More rear downforce than front gives a stable, understeering balance at high speed. If the car feels too heavy and understeery in fast corners, reduce rear or increase front. If the rear is unstable at speed, increase rear downforce.' });
 
+      var brakeBalance = dt === 'FWD' ? '55% to 60%' : dt === 'AWD' ? '52% to 56%' : '50% to 55%';
       sections.push({ name: 'Brakes', values: [
         { label: 'Brake Pressure', value: scaleValue(cls, 100, 90).toFixed(0) + '%' },
-        { label: 'Brake Balance', value: '52% to 55%' }
-      ], note: 'Front-biased brake balance prevents rear lock-up under heavy braking. If the car spins under braking, move the balance further forward. If the front locks first, move it slightly rearward.' });
+        { label: 'Brake Balance', value: brakeBalance }
+      ], note: 'Front-biased brake balance prevents rear lock-up under heavy braking. FWD cars need more front bias as the rear is lighter. If the car spins under braking, move the balance further forward.' });
 
       if (dt === 'AWD') {
         sections.push({ name: 'Differential', values: [
@@ -350,23 +357,26 @@ var KNOWLEDGE = {
         ], note: 'Moderate accel lock gives good traction on exit without inducing torque steer. Too high and the car will pull and understeer under power. Too low and you will spin the inside wheel on corner exit.' });
       } else {
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: scaleValue(cls, 65, 45).toFixed(0) + '%' },
-          { label: 'Deceleration', value: '15% to 20%' }
-        ], note: 'Moderate accel lock balances corner exit traction with stability. Too high and the rear will push wide; too low and you will spin up the inside rear wheel. Low decel lock lets the car rotate naturally on turn-in under trail braking.' });
+          { label: 'Acceleration', value: scaleValue(cls, 60, 40).toFixed(0) + '%' },
+          { label: 'Deceleration', value: '15% to 25%' }
+        ], note: 'In FH6 the 40 to 60% range works best for RWD road racing. Too high and the rear pushes wide on exit; too low and you spin the inside rear. Deceleration lock of 15 to 25% lets the car rotate on trail braking without snapping.' });
       }
 
       return sections;
     },
 
     tips: [
+      'In FH6, build the chassis first and add power last. Tyres, brakes, weight reduction, and suspension matter more than raw horsepower.',
       'If the car understeers mid-corner, soften the front ARB or stiffen the rear ARB by 2 to 3 points.',
       'If the rear steps out under braking, move brake balance forward by 2% to 3%.',
       'If you are losing time on straights, check your gearing. You should be near the rev limiter at the end of the longest straight.',
       'If the car bounces over kerbs, reduce bump stiffness on both axles.',
       'If the car feels floaty or disconnected at high speed, increase aero downforce and stiffen springs.',
       'If you have excessive wheelspin on corner exit, increase differential accel lock by 5% to 10%.',
-      'Wider tyres always help grip but cost significant PI. If budget is tight, prioritise rear width for traction.',
+      'Widening front tyres is one of the most effective grip upgrades in FH6. It often costs less PI than upgrading the tyre compound.',
       'For wet or mixed conditions, reduce tyre pressures by 1 to 2 PSI and soften the ARBs slightly.',
+      'Test on the track you intend to race. A tune built on a highway will feel completely different on a tight circuit.',
+      'Always install Race Differential and Race Anti-Roll Bars. These two upgrades unlock the most impactful tuning settings.',
       'Heavier cars need stiffer springs and more downforce to remain competitive.',
       'Lighter, agile cars may benefit from slightly softer springs to maintain mechanical grip.'
     ],
@@ -431,9 +441,9 @@ var KNOWLEDGE = {
       sections.push({ name: 'Tyres', values: [
         { label: 'Front Tyre Width', value: 'Widest available' },
         { label: 'Rear Tyre Width', value: 'Widest available' },
-        { label: 'Front Pressure', value: '25.0 PSI' },
-        { label: 'Rear Pressure', value: '25.0 PSI' }
-      ], note: 'Off-road tyres are essential. Wider tyres provide more surface area on loose ground. Low pressures maximise the contact patch for better grip.' });
+        { label: 'Front Pressure', value: '18.0 to 20.0 PSI' },
+        { label: 'Rear Pressure', value: '18.0 to 20.0 PSI' }
+      ], note: 'Off-road tyres are essential. Wider tyres provide more surface area on loose ground. Very low pressures maximise the contact patch on loose surfaces. FH6 rewards lower off-road pressures than previous titles.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: 'Shorten by 10% to 15% from default' },
@@ -460,11 +470,11 @@ var KNOWLEDGE = {
       ], note: 'Soft springs absorb bumps and jumps. Maximum ride height clears obstacles and prevents bottoming out.' });
 
       sections.push({ name: 'Damping', values: [
-        { label: 'Front Rebound', value: (5.0 * wm).toFixed(1) + ' to ' + (6.0 * wm).toFixed(1) },
-        { label: 'Rear Rebound', value: (5.0 * wm).toFixed(1) + ' to ' + (6.0 * wm).toFixed(1) },
-        { label: 'Front Bump', value: (2.5 * wm).toFixed(1) + ' to ' + (3.5 * wm).toFixed(1) },
-        { label: 'Rear Bump', value: (2.5 * wm).toFixed(1) + ' to ' + (3.5 * wm).toFixed(1) }
-      ], note: 'Moderate damping prevents the car from bouncing wildly after jumps while still absorbing impacts.' });
+        { label: 'Front Rebound', value: (6.0 * wm).toFixed(1) + ' to ' + (7.0 * wm).toFixed(1) },
+        { label: 'Rear Rebound', value: (6.0 * wm).toFixed(1) + ' to ' + (7.0 * wm).toFixed(1) },
+        { label: 'Front Bump', value: (3.6 * wm).toFixed(1) + ' to ' + (4.2 * wm).toFixed(1) },
+        { label: 'Rear Bump', value: (3.6 * wm).toFixed(1) + ' to ' + (4.2 * wm).toFixed(1) }
+      ], note: 'Bump should be roughly 60% of rebound. Higher rebound than road builds prevents bouncing after jumps. Rally and off-road benefit from slightly more rebound to control body movement on rough terrain.' });
 
       sections.push({ name: 'Brakes', values: [
         { label: 'Brake Pressure', value: '90% to 95%' },
@@ -473,12 +483,12 @@ var KNOWLEDGE = {
 
       if (dt === 'AWD' || dt === 'FWD') {
         sections.push({ name: 'Differential', values: [
-          { label: 'Front Accel', value: '25% to 35%' },
-          { label: 'Front Decel', value: '5% to 10%' },
-          { label: 'Rear Accel', value: '45% to 55%' },
-          { label: 'Rear Decel', value: '10% to 15%' },
-          { label: 'Centre Balance', value: '55% to 65% Rear' }
-        ], note: 'Moderate diff settings allow wheels to find grip independently on loose surfaces. Too much lock and you will push wide on slippery corners.' });
+          { label: 'Front Accel', value: '30% to 40%' },
+          { label: 'Front Decel', value: '0% to 15%' },
+          { label: 'Rear Accel', value: '55% to 70%' },
+          { label: 'Rear Decel', value: '20% to 25%' },
+          { label: 'Centre Balance', value: '65% to 75% Rear' }
+        ], note: 'Off-road needs moderate diff lock so wheels can find grip independently on loose surfaces. Too much lock pushes wide on slippery corners. Slightly more rear decel than road builds helps control the car on loose descents.' });
       } else {
         sections.push({ name: 'Differential', values: [
           { label: 'Acceleration', value: '45% to 55%' },
@@ -521,6 +531,22 @@ var KNOWLEDGE = {
             { label: 'Rear', value: (12.0 * wm).toFixed(1) + ' to ' + (18.0 * wm).toFixed(1) }
           ];
           sec.note = 'Slightly stiffer than off-road to reduce body roll on the faster sections, but still soft enough for terrain.';
+        }
+        if (sec.name === 'Differential' && (dt === 'AWD' || dt === 'FWD')) {
+          sec.values = [
+            { label: 'Front Accel', value: '35% to 45%' },
+            { label: 'Front Decel', value: '5% to 15%' },
+            { label: 'Rear Accel', value: '65% to 75%' },
+            { label: 'Rear Decel', value: '20% to 25%' },
+            { label: 'Centre Balance', value: '55% to 65% Rear' }
+          ];
+          sec.note = 'Cross country mixes surfaces, so a milder rear bias than pure off-road keeps the car stable on tarmac sections. More rear accel lock than off-road helps put power down on fast open terrain.';
+        }
+        if (sec.name === 'Tyres') {
+          sec.values.forEach(function (v) {
+            if (v.label.indexOf('Pressure') !== -1) v.value = '20.0 to 22.0 PSI';
+          });
+          sec.note = 'Slightly higher pressures than pure off-road for better response on tarmac sections. Still low enough for grip on loose surfaces.';
         }
       });
       return sections;
@@ -585,7 +611,9 @@ var KNOWLEDGE = {
       'Launch technique is everything. Practice feathering the throttle off the line to avoid wheelspin.',
       'AWD with full power will usually beat RWD due to superior launch traction.',
       'Gear ratios matter more than any other tuning setting in drag racing.',
-      'If you are bogging down on launch, shorten first gear. If you are spinning, lengthen it.'
+      'If you are bogging down on launch, shorten first gear. If you are spinning, lengthen it.',
+      'Consider using 8 to 10 gears for drag builds. More gears means less time between shifts and more time at peak power.',
+      'Weight reduction is critical for drag. Every kilogram removed improves acceleration directly.'
     ],
 
     engineSwapAdvice: 'Biggest engine available. Power is everything. V12s, V10s, twin turbo V8s. Whatever makes the most horsepower within your PI budget.'

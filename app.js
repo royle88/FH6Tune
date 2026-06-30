@@ -260,6 +260,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp) 
   html += '<h2>Tuning Method</h2>';
   var meta = [];
   meta.push('These values are a starting point based on your car\'s weight and class. Every car handles differently, so test and adjust in free roam or a rivals session before taking it online.');
+  meta.push('In FH6, build the chassis first and add power last. Tyres, weight reduction, brakes, and suspension have a bigger impact than raw horsepower.');
   meta.push('Change one setting at a time in small increments. If you change multiple things at once, you will not know which change helped or hurt.');
   if (discipline === 'road' || discipline === 'street') {
     meta.push('Run 3 to 5 consistent laps on a circuit you know well. Compare lap times and feel after each adjustment. If a change does not improve your time or confidence, revert it.');
