@@ -156,6 +156,82 @@ function weightScale(weight) {
   return (weight || REFERENCE_WEIGHT) / REFERENCE_WEIGHT;
 }
 
+var REAR_ENGINE = ['911', '930', '959', '964', '993', '996', '997', '991', '992'];
+
+var MID_ENGINE_MAKES = ['McLaren', 'Pagani', 'Koenigsegg', 'Rimac', 'Apollo', 'Zenvo', 'Noble', 'Radical', 'BAC', 'Gordon Murray Automotive'];
+
+var MID_ENGINE_MODELS = [
+  '4C', '8C Competizione', '33 Stradale', 'Tipo 33',
+  'Atom', 'Nomad',
+  'NSX', 'S2000',
+  'R8',
+  'i8',
+  '718', 'Boxster', 'Cayman', 'Carrera GT', '918', '917', '550', '356',
+  'Elise', 'Exige', 'Evora', 'Emira', 'Esprit',
+  'Huracan', 'Aventador', 'Gallardo', 'Countach', 'Diablo', 'Murcielago',
+  'Sesto Elemento', 'Veneno', 'Centenario', 'Revuelto', 'Miura',
+  '360', '430', '458', '488', 'F8', 'SF90', 'LaFerrari', 'Enzo', 'F40', 'F50',
+  '296', 'FXX', 'Dino', '308', '328', '348', '355', 'Testarossa', '288 GTO',
+  '250 LM', '330 P4', 'J50',
+  'GT', 'GT40',
+  'MC12', 'MC20',
+  'MR2', 'MR-S',
+  'Pantera', 'Mangusta',
+  'Corvette', 'Viper',
+  'Huayra', 'Zonda',
+  'Valhalla', 'Valkyrie', 'Vulcan',
+  'P1', 'Senna', 'Speedtail', '720S', '650S', '600LT', '570S', 'F1',
+  'One', 'AMG ONE',
+  'Carrera GT', 'Spyder',
+  'T.50', 'T.33',
+  'Gemera', 'Jesko', 'Agera', 'Regera', 'One:1', 'CC8S', 'CCX',
+  'Concept Two', 'Nevera',
+  'IE', 'Intensa Emozione',
+  'TS1', 'TSR-S',
+  'Alpha', 'RXC',
+  'Mono',
+  'SIERRA Cars'
+];
+
+var FWD_MODELS = [
+  'Civic', 'CRX', 'Integra', 'Prelude', 'Fit', 'Acty',
+  'Golf', 'Scirocco', 'Corrado', 'Polo', 'Up', 'Rallye Golf',
+  'Cooper', 'Countryman', 'Clubman',
+  'Fiesta', 'Focus', 'Puma', 'Capri',
+  'Clio', 'Megane', '5 Turbo',
+  '205', '207', '208', '306', '308',
+  'Veloster', 'i30',
+  'Astra', 'Corsa', 'Kadett', 'Manta',
+  'Peel', 'Trident',
+  'AZ-1',
+  'Eclipse', 'FTO'
+];
+
+function estimateDist(make, model, carName) {
+  var i;
+  for (i = 0; i < REAR_ENGINE.length; i++) {
+    if (model === REAR_ENGINE[i] || model.indexOf(REAR_ENGINE[i]) !== -1) return 0.40;
+  }
+  if (make === 'Alpine') return 0.43;
+  for (i = 0; i < MID_ENGINE_MAKES.length; i++) {
+    if (make === MID_ENGINE_MAKES[i]) return 0.43;
+  }
+  for (i = 0; i < MID_ENGINE_MODELS.length; i++) {
+    if (model === MID_ENGINE_MODELS[i] || model.indexOf(MID_ENGINE_MODELS[i]) !== -1) return 0.43;
+  }
+  if (make === 'Ferrari') return 0.52;
+  if (make === 'Lamborghini') return 0.52;
+  for (i = 0; i < FWD_MODELS.length; i++) {
+    if (model === FWD_MODELS[i] || model.indexOf(FWD_MODELS[i]) !== -1) return 0.60;
+  }
+  if (make === 'MINI') return 0.60;
+  if (make === 'Peel') return 0.60;
+  if (make === 'Autozam') return 0.60;
+  if (make === 'Peugeot') return 0.60;
+  if (make === 'Opel') return 0.58;
+  return 0.52;
+}
+
 function springRate(hz, axleLbs) {
   return (hz * hz * axleLbs) / 19.56;
 }
@@ -175,16 +251,93 @@ function calcFinalDrive(hp) {
   return 4.25 + ((400 - p) / 6) * 0.01;
 }
 
+function getUpgrades(cls, dt, discipline) {
+  var scale = CLASS_SCALE[cls] || 0.8;
+  var steps = [];
+
+  if (discipline === 'drift') {
+    if (dt === 'FWD') {
+      steps.push({ part: 'RWD Drivetrain Swap', reason: 'FWD cannot sustain drifts. This is the single most important upgrade for a drift build on a FWD car. Budget your remaining PI around this.' });
+    }
+    steps.push({ part: 'Engine Swap or Power Upgrades', reason: 'Target 600 to 750 BHP. Drift scoring rewards speed and angle, both of which need power. Inline 6 turbos and V8s deliver the smoothest, most controllable power for sustained slides.' });
+    steps.push({ part: 'Drift Tyres', reason: 'Purpose-built for sliding. Lower grip than road tyres but predictable breakaway. Snow tyres are a cheaper PI alternative that slide even more easily.' });
+    steps.push({ part: 'Race Transmission', reason: 'Unlocks individual gear ratio tuning. Close-ratio gearing keeps you in the power band across 3rd to 5th gear where most drifting happens. Set final drive so you can hold redline in 4th during a typical drift.' });
+    steps.push({ part: 'Race Differential', reason: 'Unlocks acceleration and deceleration lock tuning. Without this you cannot control how the rear wheels share power, which is the foundation of drift control.' });
+    steps.push({ part: 'Rear Tyre Width (Max)', reason: 'Wider rear tyres give more contact area for controlled, high-angle slides without spinning out.' });
+    steps.push({ part: 'Front Tyre Width (Min)', reason: 'Narrower fronts reduce resistance at full steering lock and improve steering response during transitions.' });
+    steps.push({ part: 'Race Suspension', reason: 'Unlocks spring rate, damping, and ride height tuning. Soft, compliant suspension helps with weight transfer for initiating and holding drifts.' });
+    steps.push({ part: 'Race Anti-Roll Bars', reason: 'Unlocks front and rear ARB tuning. The stiff front / soft rear split is what makes the car want to oversteer predictably.' });
+    steps.push({ part: 'Steering Lock Upgrade', reason: 'More steering angle means bigger drift angles and easier transitions. Install if available for your car.' });
+    steps.push({ part: 'Weight Reduction', reason: 'Lower priority for drift. Some weight helps with momentum and stability mid-slide. Only reduce weight if you have PI to spare after power and tyres.' });
+
+  } else if (discipline === 'drag') {
+    steps.push({ part: 'Biggest Engine Swap Available', reason: 'Drag is pure power. The largest engine you can fit gives the most horsepower per PI spent. V12s, twin-turbo V8s, and supercharged options are all strong.' });
+    steps.push({ part: 'Max Power Upgrades', reason: 'Stack turbo, intercooler, exhaust, intake, cam, valves, and displacement on top of the engine swap. Every horsepower matters in a straight line.' });
+    if (dt === 'RWD') {
+      steps.push({ part: 'Consider AWD Swap', reason: 'AWD launches harder than RWD because all four wheels put power down. The PI cost is significant but the launch advantage usually outweighs it at most classes.' });
+    }
+    steps.push({ part: 'Race Transmission (10-Speed)', reason: 'More gears means less time between shifts and more time at peak power. 10-speed is ideal for keeping the engine at maximum output through the entire run.' });
+    steps.push({ part: 'Race Differential', reason: 'Unlocks accel and decel lock. Full acceleration lock ensures both driven wheels put power down equally for maximum traction.' });
+    steps.push({ part: 'Rear Tyre Width (Max)', reason: 'Maximum rear contact patch for launch traction. This is where your power meets the road.' });
+    steps.push({ part: 'Full Weight Reduction', reason: 'Every kilogram removed improves acceleration directly. Lighter cars reach top speed faster.' });
+    steps.push({ part: 'Front Tyre Width (Min or Stock)', reason: 'Narrow fronts reduce rolling resistance and aerodynamic drag. The front tyres do not drive the car in a straight line.' });
+    steps.push({ part: 'Race Suspension', reason: 'Unlocks spring and ride height tuning for the raked launch stance (front high, rear low) that promotes weight transfer.' });
+
+  } else if (discipline === 'offroad' || discipline === 'cross-country') {
+    if (dt === 'RWD') {
+      steps.push({ part: 'AWD Drivetrain Swap', reason: 'RWD is severely disadvantaged on loose surfaces. AWD gives traction on all four wheels for climbing, cornering, and launching out of slow sections.' });
+    }
+    steps.push({ part: 'Engine Swap or Power Upgrades', reason: 'Power wins off-road. Faster acceleration out of corners and up hills makes a bigger difference than marginal handling gains. A strong V8 or turbo engine is the foundation.' });
+    steps.push({ part: 'Rally or Off-Road Tyres', reason: 'These compounds are designed for loose surfaces. Road tyres on dirt lose massive amounts of grip. Essential for any competitive off-road build.' });
+    steps.push({ part: 'Race Transmission', reason: 'Unlocks gear ratio tuning. Short gearing is critical off-road for strong acceleration between obstacles. You rarely reach top speed, so shorten everything.' });
+    steps.push({ part: 'Race Differential', reason: 'Unlocks front, rear, and centre diff tuning. Moderate lock lets individual wheels find grip on uneven surfaces without pushing wide.' });
+    steps.push({ part: 'Race Suspension', reason: 'Unlocks spring rate, damping, and ride height. Soft springs and maximum ride height absorb bumps and clear obstacles without bottoming out.' });
+    steps.push({ part: 'Race Anti-Roll Bars', reason: 'Unlocks ARB tuning. Soft, balanced ARBs let each wheel move independently over rough terrain, keeping all four tyres on the ground.' });
+    steps.push({ part: 'Tyre Width (Both Axles)', reason: 'Wider tyres provide more surface area on loose ground. Widen both front and rear equally for balanced grip.' });
+    steps.push({ part: 'Weight Reduction', reason: 'Lighter cars are more agile over rough terrain and less likely to bottom out on jumps. Spend remaining PI here after power and handling.' });
+    steps.push({ part: 'Race Brakes', reason: 'Unlocks brake balance tuning. Lower priority off-road as you brake less, but useful for controlling the car on steep descents.' });
+
+  } else {
+    steps.push({ part: 'Engine Swap or Power Upgrades', reason: 'Power is the biggest performance differentiator in FH6. More horsepower means faster straights and stronger exits, which add up to bigger lap time gains than any handling upgrade. Fill the car with as much power as the PI budget allows.' });
+    steps.push({ part: 'Race Transmission', reason: 'Unlocks individual gear ratio and final drive tuning. Matched gearing keeps the engine at peak power through every corner exit and straight. Without this, extra power is wasted bouncing off the limiter or bogging down.' });
+    if (scale <= 0.55) {
+      steps.push({ part: 'Sport Tyres', reason: 'At ' + cls + ' class, sport compound is the best grip upgrade you can afford. Semi-slick and slick cost too much PI at this level and eat into your power budget.' });
+    } else if (scale <= 0.7) {
+      steps.push({ part: 'Semi-Slick Tyres', reason: 'At ' + cls + ' class, semi-slick is the sweet spot. Enough grip to put the power down without eating too much PI.' });
+    } else if (scale <= 0.9) {
+      steps.push({ part: 'Semi-Slick or Slick Tyres', reason: 'At ' + cls + ' class you can afford slick compound. The extra grip lets you carry more speed through corners and get on the power earlier.' });
+    } else {
+      steps.push({ part: 'Slick Tyres', reason: 'At ' + cls + ' class, slick compound is essential. Maximum mechanical grip lets you exploit all that power on corner exit without wheelspin.' });
+    }
+    steps.push({ part: 'Race Differential', reason: 'Unlocks acceleration and deceleration lock. Controls how the power reaches the wheels on corner exit. Without it you cannot manage wheelspin or trail braking.' });
+    steps.push({ part: 'Front Tyre Width', reason: 'Widening the front tyres is one of the cheapest grip upgrades per PI point. More front grip means you can carry speed into corners and use the power earlier on exit.' });
+    steps.push({ part: 'Race Anti-Roll Bars', reason: 'Unlocks front and rear ARB tuning. The ARB split controls whether the car understeers or oversteers. Use the mechanical balance readout to dial it to 0.60.' });
+    steps.push({ part: 'Race Suspension', reason: 'Unlocks spring rate, damping, and ride height tuning. Minimum ride height lowers the centre of gravity. Springs calculated from your weight distribution give an accurate front-rear split.' });
+    steps.push({ part: 'Rear Tyre Width', reason: 'Wider rears improve traction on corner exit, letting you get on the power harder and earlier. Especially important for RWD cars with high power.' });
+    steps.push({ part: 'Weight Reduction', reason: 'Lighter cars brake later, turn faster, and accelerate harder. Spend remaining PI on weight reduction after power and tyres are sorted.' });
+    if (scale >= 0.85) {
+      steps.push({ part: 'Forza Aero (Front and Rear)', reason: 'At ' + cls + ' class, adjustable aero is essential for high-speed grip. The aero balance readout lets you target 0.40 to 0.45 for stability through fast corners.' });
+    }
+    steps.push({ part: 'Race Brakes', reason: 'Unlocks brake balance tuning. Prevents rear lock-up under heavy braking and lets you brake later into corners.' });
+    if (dt === 'FWD' && (discipline === 'road' || discipline === 'street')) {
+      steps.push({ part: 'Consider RWD or AWD Swap', reason: 'FWD naturally understeers under power. At higher classes, a drivetrain swap can unlock much more potential, but budget your PI around the swap cost.' });
+    }
+  }
+
+  return steps;
+}
+
 var KNOWLEDGE = {
 
   drift: {
     name: 'Drift',
     overview: 'Drift builds prioritise controlled oversteer, big steering angles, and smooth sustained slides. FH6 has a wider drift control range than previous titles, making it easier to hold angle and transition between corners. Power delivery matters more than peak horsepower, so you want strong mid-range torque to keep the wheels spinning without snapping the car around.',
 
-    getTuning: function (cls, dt, weight, bhp) {
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
       var sections = [];
       var wm = weightScale(weight);
       var bhpScale = (bhp || 500) / 500;
+      var fd = frontDist || 0.52;
 
       if (dt === 'FWD') {
         sections.push({ name: 'Drivetrain Warning', values: [
@@ -235,14 +388,13 @@ var KNOWLEDGE = {
       var driftHz = 2.1 + (bhpScale - 1.0) * 0.15;
       if (driftHz < 2.0) driftHz = 2.0;
       if (driftHz > 2.4) driftHz = 2.4;
-      var driftSprings = calcSprings(weight, 0.54, driftHz);
+      var driftSprings = calcSprings(weight, fd, driftHz);
       sections.push({ name: 'Springs', values: [
         { label: 'Front Springs', value: driftSprings.front + ' lbs/in' },
         { label: 'Rear Springs', value: driftSprings.rear + ' lbs/in' },
-        { label: 'Ride Frequency', value: driftHz.toFixed(2) + ' Hz' },
         { label: 'Front Ride Height', value: 'Minimum' },
         { label: 'Rear Ride Height', value: 'Minimum' }
-      ], note: 'Drift tunes use a ride frequency of 2.1 to 2.2 Hz for body roll and weight transfer. Higher BHP pushes this towards 2.3 to 2.4 Hz for stability. Springs are calculated from the formula: K = (Hz squared x axle weight) / 19.56. Minimum ride height improves responsiveness.' });
+      ], note: 'Drift springs target 2.1 to 2.4 Hz ride frequency depending on BHP. Higher power needs stiffer springs for stability. These values are calculated from your car\'s weight and distribution.' });
 
       var dampScale = Math.max(bhpScale, 0.8);
       sections.push({ name: 'Damping', values: [
@@ -258,8 +410,8 @@ var KNOWLEDGE = {
       ], note: 'Less rear downforce than front makes the rear end looser at speed.' + (bhpScale > 1.4 ? ' With very high power, more rear downforce helps keep the car controllable at speed without losing the ability to slide.' : ' If you struggle to hold angle at high speed, increase rear downforce slightly. If initiation is difficult, reduce rear further.') });
 
       sections.push({ name: 'Brakes', values: [
-        { label: 'Brake Pressure', value: '100%' },
-        { label: 'Brake Balance', value: '45% to 50%' }
+        { label: 'Brake Balance', value: '45% to 50%' },
+        { label: 'Brake Pressure', value: '100%' }
       ], note: 'Rear-biased braking helps rotate the car into a drift on corner entry. In FH6, going as low as 45% gives stronger rear lock-up for initiating slides. Full brake pressure gives maximum control over deceleration.' });
 
       if (dt === 'AWD') {
@@ -304,11 +456,12 @@ var KNOWLEDGE = {
 
   road: {
     name: 'Road Racing',
-    overview: 'Road racing builds are all about consistent lap times on tarmac circuits. You want maximum grip, sharp turn-in, stable braking, and strong corner exit traction. FH6 has more linear steering response and more forgiving braking than previous titles, so builds can be pushed closer to neutral balance. Aero is crucial at higher classes for maintaining grip through fast corners.',
+    overview: 'In FH6, power is the biggest differentiator in road racing. Fill the car with as much horsepower as the PI budget allows, then tune the chassis to control it. You want strong corner exit traction, sharp turn-in, and stable braking. FH6 has more linear steering response and more forgiving braking than previous titles, so builds can be pushed closer to neutral balance. Aero is crucial at higher classes for maintaining grip through fast corners.',
 
-    getTuning: function (cls, dt, weight) {
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
       var sections = [];
       var wm = weightScale(weight);
+      var fd = frontDist || (dt === 'FWD' ? 0.58 : 0.52);
 
       var frontPsi = dt === 'RWD' ? '32.0' : dt === 'FWD' ? '33.0' : '31.5';
       var rearPsi = dt === 'RWD' ? '31.5' : dt === 'FWD' ? '31.5' : '31.5';
@@ -317,7 +470,7 @@ var KNOWLEDGE = {
         { label: 'Rear Tyre Width', value: upgradeLevel(cls, ['Stock', '265mm', '285mm', '305mm']) },
         { label: 'Front Pressure', value: frontPsi + ' PSI (semi-slick)' },
         { label: 'Rear Pressure', value: rearPsi + ' PSI (semi-slick)' }
-      ], note: 'Meta pressures vary by compound: sport 31.5, semi-slick 32.0, slick 32.5 PSI. RWD adds +0.75 PSI to the front for sharper turn-in. FWD adds +1.5 PSI front. Widening front tyres is one of the most PI-efficient grip upgrades in FH6.' });
+      ], note: 'These pressures are for semi-slick compound. For sport tyres, drop 0.5 PSI each side. For slick, add 0.5 PSI each side. RWD runs higher front pressure for sharper turn-in. FWD runs even higher front pressure to reduce understeer. Widening front tyres is one of the most PI-efficient grip upgrades in FH6.' });
 
       sections.push({ name: 'Gearing', values: [
         { label: 'Final Drive', value: 'Adjust to suit circuit (see note)' },
@@ -346,15 +499,13 @@ var KNOWLEDGE = {
       ], note: arbNote });
 
       var rideHz = scaleValue(cls, 2.55, 2.30);
-      var frontDist = dt === 'FWD' ? 0.58 : 0.52;
-      var springs = calcSprings(weight, frontDist, rideHz);
+      var springs = calcSprings(weight, fd, rideHz);
       sections.push({ name: 'Springs', values: [
         { label: 'Front Springs', value: springs.front + ' lbs/in' },
         { label: 'Rear Springs', value: springs.rear + ' lbs/in' },
-        { label: 'Ride Frequency', value: rideHz.toFixed(2) + ' Hz' },
         { label: 'Front Ride Height', value: 'Minimum' },
         { label: 'Rear Ride Height', value: 'Minimum' }
-      ], note: 'Springs are calculated using the ride frequency formula: K = (Hz squared x axle weight) / 19.56. Circuit tunes target 2.5 Hz for sharp response. Minimum ride height lowers the centre of gravity. Every millimetre of ride height is centre-of-gravity height on smooth tarmac.' });
+      ], note: 'Springs are calculated from your car\'s weight and distribution, targeting 2.5 Hz for sharp circuit response. Minimum ride height lowers the centre of gravity for maximum grip on smooth tarmac.' });
 
       var frontRebound = scaleValue(cls, 8.5, 5.5) * wm;
       var rearRebound = frontRebound - 0.3;
@@ -373,8 +524,8 @@ var KNOWLEDGE = {
 
       var brakeBalance = dt === 'FWD' ? '55% to 60%' : dt === 'AWD' ? '52% to 56%' : '50% to 55%';
       sections.push({ name: 'Brakes', values: [
-        { label: 'Brake Pressure', value: scaleValue(cls, 100, 90).toFixed(0) + '%' },
-        { label: 'Brake Balance', value: brakeBalance }
+        { label: 'Brake Balance', value: brakeBalance },
+        { label: 'Brake Pressure', value: scaleValue(cls, 100, 90).toFixed(0) + '%' }
       ], note: 'Front-biased brake balance prevents rear lock-up under heavy braking. FWD cars need more front bias as the rear is lighter. If the car spins under braking, move the balance further forward.' });
 
       if (dt === 'AWD') {
@@ -387,21 +538,21 @@ var KNOWLEDGE = {
         ], note: 'Meta AWD diff uses maximum rear accel lock with very low front accel to minimise understeer. Zero front decel lets the front wheels steer freely on turn-in. High rear decel stabilises the car under trail braking. A heavily rear-biased centre makes the car feel RWD-like with AWD traction.' });
       } else if (dt === 'FWD') {
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: '40% to 50%' },
-          { label: 'Deceleration', value: '10% to 15%' }
-        ], note: 'Moderate accel lock gives good traction on exit without inducing torque steer. Too high and the car will pull and understeer under power. Too low and you will spin the inside wheel on corner exit.' });
+          { label: 'Acceleration', value: '60% to 75%' },
+          { label: 'Deceleration', value: '10% to 20%' }
+        ], note: 'FWD needs strong accel lock to stop the inside wheel spinning on exit and put power down. In the FH6 meta, higher lock means faster exits. If the car pulls or understeers heavily under power, drop 5% at a time.' });
       } else {
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: scaleValue(cls, 60, 40).toFixed(0) + '%' },
-          { label: 'Deceleration', value: '15% to 25%' }
-        ], note: 'In FH6 the 40 to 60% range works best for RWD road racing. Too high and the rear pushes wide on exit; too low and you spin the inside rear. Deceleration lock of 15 to 25% lets the car rotate on trail braking without snapping.' });
+          { label: 'Acceleration', value: scaleValue(cls, 95, 75).toFixed(0) + '%' },
+          { label: 'Deceleration', value: '20% to 35%' }
+        ], note: 'In FH6 power wins, so you need high accel lock to put that power down on corner exit. The 75 to 95% range keeps both rear wheels working together. If the rear pushes wide on tight exits, drop 5% at a time. Higher decel (20 to 35%) lets the car rotate under trail braking for sharper turn-in.' });
       }
 
       return sections;
     },
 
     tips: [
-      'In FH6, build the chassis first and add power last. Tyres, brakes, weight reduction, and suspension matter more than raw horsepower.',
+      'In FH6, power wins. Maximise horsepower first, then add handling parts to control it. A fast car with average grip beats a slow car with perfect grip.',
       'If the car understeers mid-corner, soften the front ARB or stiffen the rear ARB by 2 to 3 points.',
       'If the rear steps out under braking, move brake balance forward by 2% to 3%.',
       'If you are losing time on straights, check your gearing. You should be near the rev limiter at the end of the longest straight.',
@@ -423,8 +574,8 @@ var KNOWLEDGE = {
     name: 'Street Racing',
     overview: 'Street racing is similar to road racing but on mixed surfaces with traffic, tighter corners, and more elevation changes. You want a car that is quick to respond, forgiving over bumps, and strong on acceleration out of tight turns. Slightly softer suspension than full road racing helps on rougher surfaces.',
 
-    getTuning: function (cls, dt, weight) {
-      var sections = KNOWLEDGE.road.getTuning(cls, dt, weight);
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
+      var sections = KNOWLEDGE.road.getTuning(cls, dt, weight, bhp, frontDist);
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
           sec.values.forEach(function (v) {
@@ -463,9 +614,10 @@ var KNOWLEDGE = {
     name: 'Off-Road',
     overview: 'Off-road builds need soft, compliant suspension to absorb bumps and jumps, combined with enough grip to handle loose surfaces. Rally tyres are essential. Ride height should be raised to clear obstacles, and the suspension should soak up rough terrain without unsettling the car.',
 
-    getTuning: function (cls, dt, weight) {
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
       var sections = [];
       var wm = weightScale(weight);
+      var fd = frontDist || 0.52;
 
       if (dt === 'RWD') {
         sections.push({ name: 'Drivetrain Warning', values: [
@@ -499,13 +651,12 @@ var KNOWLEDGE = {
       ], note: 'Soft, balanced ARBs let each wheel move independently over rough terrain. This keeps all four tyres in contact with the ground as much as possible.' });
 
       var rallyHz = 2.0;
-      var rallySprings = calcSprings(weight, 0.52, rallyHz);
+      var rallySprings = calcSprings(weight, fd, rallyHz);
       sections.push({ name: 'Springs', values: [
         { label: 'Front Springs', value: rallySprings.front + ' lbs/in' },
         { label: 'Rear Springs', value: rallySprings.rear + ' lbs/in' },
-        { label: 'Ride Frequency', value: rallyHz.toFixed(2) + ' Hz' },
         { label: 'Ride Height', value: 'Maximum' }
-      ], note: 'Rally and off-road use a ride frequency of 2.0 Hz for soft, compliant suspension that absorbs bumps and jumps. Springs are calculated from the formula: K = (Hz squared x axle weight) / 19.56. Maximum ride height clears obstacles and prevents bottoming out.' });
+      ], note: 'Soft springs calculated from your car\'s weight and distribution for compliant off-road suspension. Maximum ride height clears obstacles and prevents bottoming out on jumps.' });
 
       sections.push({ name: 'Damping', values: [
         { label: 'Front Rebound', value: (6.0 * wm).toFixed(1) + ' to ' + (7.0 * wm).toFixed(1) },
@@ -515,23 +666,23 @@ var KNOWLEDGE = {
       ], note: 'Bump should be roughly 60% of rebound. Higher rebound than road builds prevents bouncing after jumps. Rally and off-road benefit from slightly more rebound to control body movement on rough terrain.' });
 
       sections.push({ name: 'Brakes', values: [
-        { label: 'Brake Pressure', value: '90% to 95%' },
-        { label: 'Brake Balance', value: '50% to 52%' }
+        { label: 'Brake Balance', value: '50% to 52%' },
+        { label: 'Brake Pressure', value: '90% to 95%' }
       ]});
 
       if (dt === 'AWD' || dt === 'FWD') {
         sections.push({ name: 'Differential', values: [
           { label: 'Front Accel', value: '30% to 40%' },
           { label: 'Front Decel', value: '0% to 15%' },
-          { label: 'Rear Accel', value: '55% to 70%' },
-          { label: 'Rear Decel', value: '20% to 25%' },
+          { label: 'Rear Accel', value: '70% to 85%' },
+          { label: 'Rear Decel', value: '20% to 30%' },
           { label: 'Centre Balance', value: '65% to 75% Rear' }
-        ], note: 'Off-road needs moderate diff lock so wheels can find grip independently on loose surfaces. Too much lock pushes wide on slippery corners. Slightly more rear decel than road builds helps control the car on loose descents.' });
+        ], note: 'Power-first meta means you need strong rear lock to put that power down on loose surfaces. High rear accel keeps both wheels driving together on exit. If the car pushes wide on slippery corners, drop rear accel 5% at a time. Rear decel helps control the car on loose descents.' });
       } else {
         sections.push({ name: 'Differential', values: [
-          { label: 'Acceleration', value: '45% to 55%' },
-          { label: 'Deceleration', value: '10% to 15%' }
-        ]});
+          { label: 'Acceleration', value: '60% to 75%' },
+          { label: 'Deceleration', value: '15% to 25%' }
+        ], note: 'RWD off-road needs strong accel lock to put power down on loose surfaces. If the car pushes wide on slippery exits, drop 5% at a time.' });
       }
 
       return sections;
@@ -551,20 +702,20 @@ var KNOWLEDGE = {
     name: 'Cross Country',
     overview: 'Cross country combines off-road terrain with some tarmac sections and high-speed open areas. You need a build that handles both surfaces, with slightly stiffer suspension than pure off-road to cope with the faster sections while still absorbing rough terrain.',
 
-    getTuning: function (cls, dt, weight) {
-      var sections = KNOWLEDGE.offroad.getTuning(cls, dt, weight);
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
+      var sections = KNOWLEDGE.offroad.getTuning(cls, dt, weight, bhp, frontDist);
       var wm = weightScale(weight);
+      var fd = frontDist || 0.52;
       sections.forEach(function (sec) {
         if (sec.name === 'Springs') {
           var ccHz = 2.15;
-          var ccSprings = calcSprings(weight, 0.52, ccHz);
+          var ccSprings = calcSprings(weight, fd, ccHz);
           sec.values = [
             { label: 'Front Springs', value: ccSprings.front + ' lbs/in' },
             { label: 'Rear Springs', value: ccSprings.rear + ' lbs/in' },
-            { label: 'Ride Frequency', value: ccHz.toFixed(2) + ' Hz' },
             { label: 'Ride Height', value: 'Maximum or near maximum' }
           ];
-          sec.note = 'Cross country uses 2.15 Hz ride frequency, slightly stiffer than pure off-road for the faster tarmac sections. Still soft enough for rough terrain.';
+          sec.note = 'Slightly stiffer springs than pure off-road for the faster tarmac sections. Still soft enough for rough terrain.';
         }
         if (sec.name === 'Anti-Roll Bars') {
           sec.values = [
@@ -575,11 +726,11 @@ var KNOWLEDGE = {
         }
         if (sec.name === 'Differential' && (dt === 'AWD' || dt === 'FWD')) {
           sec.values = [
-            { label: 'Front Accel', value: '35% to 45%' },
+            { label: 'Front Accel', value: '35% to 50%' },
             { label: 'Front Decel', value: '5% to 15%' },
-            { label: 'Rear Accel', value: '65% to 75%' },
-            { label: 'Rear Decel', value: '20% to 25%' },
-            { label: 'Centre Balance', value: '55% to 65% Rear' }
+            { label: 'Rear Accel', value: '75% to 90%' },
+            { label: 'Rear Decel', value: '20% to 30%' },
+            { label: 'Centre Balance', value: '60% to 70% Rear' }
           ];
           sec.note = 'Cross country mixes surfaces, so a milder rear bias than pure off-road keeps the car stable on tarmac sections. More rear accel lock than off-road helps put power down on fast open terrain.';
         }
@@ -607,7 +758,7 @@ var KNOWLEDGE = {
     name: 'Drag',
     overview: 'Drag racing is pure straight-line speed. Every upgrade should focus on maximising power and traction off the line. Weight reduction is critical. The car needs to launch hard without spinning the wheels, then accelerate as fast as possible to the finish.',
 
-    getTuning: function (cls, dt, weight) {
+    getTuning: function (cls, dt, weight, bhp, frontDist) {
       var sections = [];
 
       sections.push({ name: 'Tyres', values: [
@@ -639,10 +790,26 @@ var KNOWLEDGE = {
       sections.push({ name: 'Springs', values: [
         { label: 'Front Springs', value: softFront + ' lbs/in (soft)' },
         { label: 'Rear Springs', value: dragSprings.rear + ' lbs/in (stiff)' },
-        { label: 'Ride Frequency', value: dragHz.toFixed(2) + ' Hz (rear)' },
         { label: 'Front Ride Height', value: 'Maximum' },
         { label: 'Rear Ride Height', value: 'Minimum' }
-      ], note: 'Drag tunes use a high ride frequency (2.6 to 2.7 Hz) for the rear to support weight transfer on launch. The front is halved to let weight shift rearward. A raked stance (front high, rear low) promotes weight transfer off the line.' });
+      ], note: 'Stiff rear springs support weight transfer on launch. The front is halved to let weight shift rearward. A raked stance (front high, rear low) promotes maximum traction off the line.' });
+
+      sections.push({ name: 'Damping', values: [
+        { label: 'Front Rebound', value: '4.0 to 5.0' },
+        { label: 'Rear Rebound', value: '8.0 to 10.0' },
+        { label: 'Front Bump', value: '2.5 to 3.0' },
+        { label: 'Rear Bump', value: '5.0 to 6.0' }
+      ], note: 'Stiff rear damping resists squat and keeps the rear planted under hard acceleration. Soft front allows weight to transfer rearward on launch. Bump is roughly 60% of rebound.' });
+
+      sections.push({ name: 'Aero', values: [
+        { label: 'Front Downforce', value: 'Remove front aero if possible' },
+        { label: 'Rear Downforce', value: 'Minimum or remove (add rear wing only if wheelspin is severe)' }
+      ], note: 'Less downforce means less aerodynamic drag and higher top speed. Only add a rear wing if you cannot control wheelspin through gearing and differential alone. Front aero adds drag with no benefit in a straight line.' });
+
+      sections.push({ name: 'Brakes', values: [
+        { label: 'Brake Balance', value: '50%' },
+        { label: 'Brake Pressure', value: '100%' }
+      ], note: 'Brakes are rarely used in drag racing, but balanced pressure helps if you need to stop at the end of a strip.' });
 
       sections.push({ name: 'Differential', values: [
         { label: 'Acceleration', value: '100%' },

@@ -143,15 +143,18 @@ function generate() {
     return;
   }
 
+  var carMake = document.getElementById('car-make').value;
+  var carModel = document.getElementById('car-model').value;
   var carSelEl = document.getElementById('car-name');
   var selectedOpt = carSelEl.options[carSelEl.selectedIndex];
   var carWeight = parseInt(selectedOpt.dataset.weight, 10) || 1400;
+  var frontDistDecimal = estimateDist(carMake, carModel, carName);
 
   document.getElementById('output-title').textContent = carName;
   var weightDisplay = units === 'imperial'
     ? Math.round(carWeight * 2.2046) + ' lbs'
     : carWeight + ' kg';
-  var subtitleParts = [carClass, drivetrain, data.name, weightDisplay];
+  var subtitleParts = [carClass, drivetrain, data.name, weightDisplay, Math.round(frontDistDecimal * 100) + '/' + Math.round((1 - frontDistDecimal) * 100) + ' F/R'];
   if (discipline === 'drift' && bhp > 0) subtitleParts.push(bhp + ' BHP');
   document.getElementById('output-subtitle').textContent = subtitleParts.join(' | ');
 
@@ -160,7 +163,7 @@ function generate() {
   document.getElementById('output-section').style.display = 'none';
 
   setTimeout(function () {
-    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight, units, bhp);
+    var html = buildGuide(data, carClass, drivetrain, engineSwaps, discipline, carWeight, units, bhp, frontDistDecimal);
     document.getElementById('loading-section').style.display = 'none';
     document.getElementById('output-section').style.display = 'block';
     document.getElementById('ai-response').innerHTML = html;
@@ -199,10 +202,22 @@ function convertTuningUnits(sections, units) {
   }
 }
 
-function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp) {
+function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp, frontDist) {
   var html = '';
 
   html += '<p>' + escapeHtml(data.overview) + '</p>';
+
+  // Upgrade guide
+  var upgrades = getUpgrades(cls, dt, discipline);
+  if (upgrades && upgrades.length > 0) {
+    html += '<h2>Upgrade Priority</h2>';
+    html += '<ol>';
+    for (var u = 0; u < upgrades.length; u++) {
+      html += '<li><strong>' + escapeHtml(upgrades[u].part) + '</strong> ';
+      html += escapeHtml(upgrades[u].reason) + '</li>';
+    }
+    html += '</ol>';
+  }
 
   // Engine swap advice
   if (engineSwaps && engineSwaps.length > 0) {
@@ -230,7 +245,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp) 
   // Tuning
   html += '<h2>Tuning</h2>';
 
-  var tuning = data.getTuning(cls, dt, weight, bhp);
+  var tuning = data.getTuning(cls, dt, weight, bhp, frontDist);
   convertTuningUnits(tuning, units);
   for (var t = 0; t < tuning.length; t++) {
     var sec = tuning[t];
@@ -260,7 +275,7 @@ function buildGuide(data, cls, dt, engineSwaps, discipline, weight, units, bhp) 
   html += '<h2>Tuning Method</h2>';
   var meta = [];
   meta.push('These values are a starting point based on your car\'s weight and class. Every car handles differently, so test and adjust in free roam or a rivals session before taking it online.');
-  meta.push('In FH6, build the chassis first and add power last. Tyres, weight reduction, brakes, and suspension have a bigger impact than raw horsepower.');
+  meta.push('In FH6, power wins. Maximise horsepower first, then add the handling parts to control it. The tuning settings are what turn raw power into fast lap times.');
   meta.push('Change one setting at a time in small increments. If you change multiple things at once, you will not know which change helped or hurt.');
   if (discipline === 'road' || discipline === 'street') {
     meta.push('Run 3 to 5 consistent laps on a circuit you know well. Compare lap times and feel after each adjustment. If a change does not improve your time or confidence, revert it.');
